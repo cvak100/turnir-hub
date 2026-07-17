@@ -1758,6 +1758,957 @@ Possible next phases:
 
 **End of Phase 7 document**
 
+# Phase 8 – Design System (Notepad / Scorekeeper Style)
+
+
+---
+
+## 1. Design goal
+
+The visual identity of the application should feel like:
+
+- a paper notepad
+- a handwritten match records book
+- a 1990s scorekeeper desk
+- analog, human, slightly imperfect
+
+It must **not** feel like a modern clean SaaS dashboard.
+
+The user should feel:
+> “This looks like someone is writing results by hand on paper.”
+
+---
+
+## 2. Core atmosphere
+
+### Desired feeling
+- paper
+- pencil
+- notebook
+- slight messiness
+- warmth
+- old tournament table energy
+
+### Not desired
+- flat Material Design
+- perfect geometric borders
+- neon gradients
+- glassmorphism
+- corporate blue dashboard look
+- overly polished startup UI
+
+---
+
+## 3. Color palette
+
+### Background
+- Main background: pale warm yellow / notepad paper
+  - primary suggestion: `#fff8dc`
+  - alternative soft tones: `#fffbe6`, `#f9e79f` for header/footer blocks
+
+### Text
+- Main text: near-black / dark gray
+  - suggestion: `#333333`
+
+### Accent colors
+- Dark blue: interactive states, hover, active links
+- Red: warnings, important markers, cards, alerts
+- Black: main outlines and sketch lines
+
+### Usage rules
+- Blue = interaction
+- Red = importance / danger / strong marker
+- Black = structure and handwriting lines
+- Yellow paper = base surface
+
+---
+
+## 4. Typography
+
+### Primary font direction
+Handwritten / sketchy font family.
+
+Preferred direction:
+- `Architects Daughter`
+- alternatives: `Indie Flower`, `Rock Salt` (use carefully)
+
+### Rules
+- body text should remain readable
+- do not use extremely wild fonts for long tables
+- headings can be more expressive
+- font weight mostly normal to medium
+- avoid perfect geometric sans-serif as the main identity
+
+---
+
+## 5. Lines, borders and shapes
+
+This is the heart of the design.
+
+### Lines must not be perfectly straight
+Borders and underlines should look:
+- hand-drawn
+- slightly corrected
+- double-traced
+- imperfect
+
+### Implementation approach
+Use SVG stroke paths for:
+- box borders
+- underlines
+- separators
+- header/footer dividers
+
+### Motion / posture
+Slight rotations are allowed and desired:
+- `-0.8deg`
+- `-0.5deg`
+- `0.4deg` on hover
+
+This creates a paper-like, human feel.
+
+---
+
+## 6. Component guidelines
+
+### 6.1 Buttons
+- transparent or paper-like background
+- sketchy border
+- bold text
+- slight rotation
+- hover changes border/stroke to blue
+- no heavy shadows, no rounded corporate pills
+
+### 6.2 Links
+- look underlined by hand
+- no default perfect browser underline only
+- hover can tilt slightly and turn blue
+
+### 6.3 Inputs
+- no heavy boxed modern input style as default
+- prefer underline-style inputs with sketchy bottom line
+- focus state can change underline to blue
+
+### 6.4 Cards / boxes
+- paper surface feeling
+- sketchy outer border
+- optional subtle alternative border variants
+- should feel like clipped notes or paper sections
+
+### 6.5 Tables
+- avoid hard perfect grid lines
+- use sketchy separators between rows
+- header can have stronger hand-drawn bottom line
+- hover row may change separator color to blue
+- content remains readable and centered where useful
+
+### 6.6 Navigation
+- links should feel stamped/hand-marked
+- sketchy borders around nav items are welcome
+- active/hover state uses blue stroke
+- mobile navigation can collapse, but must keep the same analog language
+
+---
+
+## 7. Layout guidelines
+
+### General
+- content should breathe
+- do not overcrowd
+- paper sections should feel intentional
+- page can feel like a notebook spread, not an admin CRM
+
+### Header / Footer
+- soft yellow paper blocks
+- sketchy divider lines on edges
+- simple, functional, analog
+
+### Content width
+- readable max width for forms and tables
+- wide enough for match data
+- not full-bleed ultra-wide modern dashboard
+
+---
+
+## 8. Live match screen direction
+
+Even without final visuals yet, live pages should feel like:
+
+- a live score sheet
+- handwritten event timeline
+- paper table for score and events
+
+Suggestions:
+- current score large and clear
+- events listed like notes in a match protocol
+- temporary/unknown player labels should feel natural in this style
+  - e.g. `Neznani #9`
+
+---
+
+## 9. Interaction style
+
+### Hover
+- small physical reaction
+- slight rotate
+- stroke color change to blue
+
+### Active / Focus
+- clear but still analog
+- blue sketch line preferred over neon outline
+
+### Disabled
+- lower contrast
+- still paper-like
+- never look like modern gray Material disabled buttons
+
+---
+
+## 10. Design tokens (practical starting point)
+
+```text
+--color-paper: #fff8dc;
+--color-paper-strong: #f9e79f;
+--color-ink: #333333;
+--color-ink-soft: #555555;
+--color-accent-blue: #0000ff; /* or a darker practical blue */
+--color-accent-red: #c1121f;
+--color-line: #000000;
+--radius-none-preferred: 0 to very small
+--shadow-minimal: rare, paper-like only
+```
+
+Note:
+Exact blue/red values can be refined later, but hierarchy stays the same.
+
+---
+
+## 11. Do / Don’t
+
+### Do
+- use paper yellow backgrounds
+- use handwritten fonts carefully
+- use imperfect SVG borders
+- use slight rotation
+- keep the scorekeeper notebook mood
+
+### Don’t
+- introduce clean Bootstrap-looking cards as the main style
+- use perfect 1px gray grids everywhere
+- use gradient buttons
+- use overly modern icon packs that break the analog mood
+- make it look like a fintech dashboard
+
+---
+
+## 12. Implementation notes for frontend
+
+1. Create reusable classes/components:
+   - `sketchy-box`
+   - `sketchy-btn`
+   - `sketchy-input`
+   - `sketchy-link`
+   - `sketchy-table`
+
+2. Keep SVG border variants limited:
+   - 2 to 4 stroke variants are enough
+
+3. Accessibility still matters:
+   - contrast must remain readable
+   - handwritten font must not destroy table readability
+
+4. Mobile:
+   - keep sketch style
+   - simplify spacing
+   - preserve underlines/borders language
+
+---
+
+## 13. Reference direction from existing CSS
+
+The previous design already contains the correct DNA:
+- `#fff8dc` paper background
+- `Architects Daughter`
+- SVG sketch borders
+- hover to blue stroke
+- slight rotations
+- handwritten underlines
+
+Phase 8 should formalize and systematize that style across the whole app.
+
+---
+
+## 14. Definition of Done (Phase 8)
+
+This phase is complete when:
+
+- [ ] color palette is defined and applied
+- [ ] handwritten/sketch typography is chosen
+- [ ] shared sketchy components exist
+- [ ] buttons/links/inputs/tables follow the same language
+- [ ] live pages fit the notepad mood
+- [ ] the app no longer looks like a generic admin template
+- [ ] style remains readable on desktop and mobile
+
+---
+
+## 15. Final design sentence
+
+**Build a digital tournament notebook, not a digital dashboard.**
+
+---
+
+**End of Phase 8 document**
+
+# Phase 6.6 – Generators & Automation Helpers
+
+---
+
+## 1. Goal of this phase
+
+This phase builds practical automation tools that:
+
+- speed up development
+- reduce repetitive manual setup
+- help organizers prepare tournaments faster
+- make testing of live and preparation flows realistic
+
+These tools are not the core domain itself.  
+They are **supporting engines** around the domain.
+
+By the end of this phase, a developer or organizer should be able to:
+
+1. generate a full demo tournament in seconds
+2. draw teams into groups
+3. generate group-stage matches
+4. generate knockout structures
+5. recalculate scores/stats safely
+6. optionally advance qualified teams into the next phase
+
+---
+
+## 2. Why this phase matters
+
+Without generators, development becomes painful:
+
+- create tournament manually
+- create edition manually
+- create 12 teams manually
+- register them manually
+- create players manually
+- create groups manually
+- create 20+ matches manually
+
+That is too slow.
+
+With generators:
+- one command prepares a realistic environment
+- frontend and live features can be tested immediately
+- business rules can be verified on non-trivial data
+
+---
+
+## 3. Design principles
+
+### 3.1 Generators must be explicit
+Never silently destroy important data.
+
+Bad:
+- delete all matches and recreate without warning
+
+Good:
+- require flags like `--force`
+- show what will be created
+- prefer additive generation
+
+### 3.2 Generators must use services
+Do not put generation logic only inside management commands.
+
+Structure:
+- `management/commands/...` = CLI entry
+- `services/generators/...` = real logic
+
+This allows reuse from admin actions or API later.
+
+### 3.3 Generators must respect domain rules
+They must not bypass:
+- unique team participation per edition
+- unique player assignment per edition
+- phase/group consistency
+- same-edition constraints for matches
+
+### 3.4 Generators should be deterministic when needed
+Support an optional `--seed` value for random operations.
+
+This helps reproducible testing.
+
+### 3.5 Output must be readable
+Every command should print a clear summary:
+
+```text
+Created:
+- Tournament: Poletni turnir Demo
+- Edition: 2026
+- Teams: 12
+- Players: 144
+- Groups: 3
+- Matches: 18
+```
+
+---
+
+## 4. Recommended folder structure
+
+```text
+apps/
+├── core/
+│   └── management/commands/
+│       ├── seed_all.py
+│       ├── generate_demo_tournament.py
+│       └── recalculate_edition.py
+├── tournaments/
+│   └── services/
+│       └── generators/
+│           ├── demo.py
+│           ├── draw.py
+│           ├── fixtures.py
+│           ├── knockout.py
+│           └── advancement.py
+└── matches/
+    └── services/
+        └── recalculation.py
+```
+
+---
+
+## 5. Generator 1 – Demo Tournament Generator
+
+### 5.1 Purpose
+Create a complete realistic tournament setup for development and demos.
+
+### 5.2 What it should create
+
+Minimum:
+- 1 Tournament
+- 1 TournamentEdition
+- N teams
+- team participations
+- players per team
+- 1 group stage phase
+- groups
+- group assignments
+- group matches
+- optional some live events
+
+### 5.3 Suggested CLI
+
+```bash
+python manage.py generate_demo_tournament
+python manage.py generate_demo_tournament --teams 12 --players-per-team 12
+python manage.py generate_demo_tournament --teams 8 --with-events
+python manage.py generate_demo_tournament --name "Demo Cup" --year 2026 --seed 42
+```
+
+### 5.4 Suggested arguments
+
+| Argument | Meaning | Default |
+|----------|---------|---------|
+| `--name` | Tournament name | `Demo Tournament` |
+| `--year` | Edition year | current year |
+| `--teams` | number of teams | `8` |
+| `--players-per-team` | players per team | `11` |
+| `--groups` | number of groups | auto |
+| `--with-events` | also generate some match events | `False` |
+| `--seed` | random seed | none |
+| `--force` | allow recreation logic if needed | `False` |
+
+### 5.5 Internal creation order
+
+1. Ensure base seeds exist (statuses, event types)
+2. Create Tournament
+3. Create TournamentEdition
+4. Create Teams
+5. Create TeamParticipations
+6. Create Persons + Players
+7. Assign players to participations
+8. Create Group Stage phase
+9. Create groups
+10. Draw teams into groups
+11. Generate group matches
+12. Optionally generate events for first few matches
+
+### 5.6 Business rules inside demo generator
+
+- all teams get unique names (`FC Demo 01`...)
+- participation names can equal team names
+- players get jersey numbers 1..N
+- one captain per team
+- matches get status `scheduled`
+- if `--with-events` is used:
+  - set some matches to `finished` or `live`
+  - create goals/cards with valid players
+  - recalculate scores/stats
+
+### 5.7 Why this is the highest priority
+It unblocks almost all later development and manual QA.
+
+---
+
+## 6. Generator 2 – Draw Teams into Groups
+
+### 6.1 Purpose
+Automatically assign registered teams into groups for a phase.
+
+### 6.2 Typical situation
+Organizer has:
+- edition with 12 approved team participations
+- phase `Group Stage`
+- groups A/B/C created
+
+Now teams need to be drawn into groups.
+
+### 6.3 Suggested CLI / service entry
+
+```bash
+python manage.py draw_groups --edition 8 --phase 3
+python manage.py draw_groups --edition 8 --phase 3 --seed 42
+python manage.py draw_groups --edition 8 --phase 3 --force
+```
+
+### 6.4 Inputs
+- edition
+- phase
+- optional list of team participation IDs
+- optional random seed
+- force flag
+
+### 6.5 Algorithm (simple first version)
+
+1. Load all eligible team participations for edition
+2. Load all groups in phase ordered by `order`
+3. Validate counts:
+   - if group `max_teams` exists, respect it
+   - if not enough capacity, fail clearly
+4. Shuffle teams deterministically if seed provided
+5. Distribute teams round-robin into groups:
+   - team1 → group A
+   - team2 → group B
+   - team3 → group C
+   - team4 → group A
+   - ...
+6. Create `TournamentPhaseGroupTeam` rows
+
+### 6.6 Validation rules
+
+- phase must belong to edition
+- phase type should normally be `GROUP_STAGE`
+- do not draw same team twice into same phase
+- if groups already have teams:
+  - either abort
+  - or require `--force` to rebuild assignments
+
+### 6.7 Output example
+
+```text
+Draw completed for phase: Group Stage
+Group A: FC Alfa, FC Delta, FC Omega
+Group B: FC Beta, FC Epsilon, FC Sigma
+Group C: FC Gama, FC Zeta, FC Nova
+```
+
+### 6.8 Future improvement
+Support seeded pots:
+- Pot 1 strong teams
+- Pot 2 medium
+- Pot 3 weaker
+
+Not required in first version.
+
+---
+
+## 7. Generator 3 – Group Fixture Generator
+
+### 7.1 Purpose
+Generate round-robin matches inside groups.
+
+### 7.2 Typical situation
+Groups are filled with teams.  
+Now create all scheduled matches.
+
+### 7.3 Suggested CLI
+
+```bash
+python manage.py generate_group_fixtures --phase 3
+python manage.py generate_group_fixtures --group 11
+python manage.py generate_group_fixtures --phase 3 --double-round
+python manage.py generate_group_fixtures --phase 3 --force
+```
+
+### 7.4 Algorithm for one group
+
+For teams `[T1, T2, T3, T4]`:
+
+Single round-robin pairs:
+- T1 vs T2
+- T1 vs T3
+- T1 vs T4
+- T2 vs T3
+- T2 vs T4
+- T3 vs T4
+
+If `--double-round`:
+- also generate reverse fixtures
+
+### 7.5 Match creation rules
+
+Each generated match:
+- `tournament_phase` = parent phase
+- `tournament_phase_group` = current group
+- `home_team_participation` / `away_team_participation` set
+- `status` = scheduled
+- scores empty
+- optional sequential `match_number`
+
+### 7.6 Validation rules
+
+- group must have at least 2 teams
+- all teams must belong to same edition
+- if matches already exist for group:
+  - abort by default
+  - recreate only with `--force`
+
+### 7.7 Practical notes
+
+Home/away assignment:
+- first version can be arbitrary but stable
+- later can balance home/away counts
+
+Date assignment:
+- first version can leave `match_date` empty
+- later support auto-scheduling by day slots
+
+---
+
+## 8. Generator 4 – Knockout Bracket Generator
+
+### 8.1 Purpose
+Create knockout phases and matches from a list of qualified teams.
+
+### 8.2 Supported first version
+- pure power-of-two brackets:
+  - 2 teams → Final
+  - 4 teams → Semi + Final
+  - 8 teams → Quarter + Semi + Final
+  - 16 teams → Round of 16 + ...
+
+If team count is not power of two:
+- fail with clear message in v1
+- later support byes
+
+### 8.3 Suggested CLI
+
+```bash
+python manage.py generate_knockout --edition 8 --team-ids 1,2,3,4,5,6,7,8
+python manage.py generate_knockout --edition 8 --from-phase 3 --advance-per-group 2
+python manage.py generate_knockout --edition 8 --include-third-place
+```
+
+### 8.4 Creation order
+
+1. Resolve qualified teams
+2. Validate count
+3. Create phases:
+   - Quarterfinals / Semifinals / Final
+   - optional Third Place
+4. Create matches with empty or prefilled pairs
+5. Set order of phases correctly
+
+### 8.5 Pairing strategies
+
+#### A. Simple sequential
+1 vs 2, 3 vs 4, ...
+
+#### B. Standard cross pairing from groups
+If coming from groups:
+- A1 vs B2
+- B1 vs A2
+- C1 vs D2
+- D1 vs C2
+
+First version can support:
+1. manual team list pairing
+2. basic group-based cross pairing
+
+### 8.6 Placeholder matches
+In early bracket generation, later-round matches may have unknown teams.
+
+Options:
+1. create only current round matches
+2. create full bracket with nullable teams for future rounds
+
+Recommended v1:
+- create only the first playable knockout round
+- create later rounds when previous round finishes  
+or
+- create full structure with nullable teams if your Match model allows it
+
+Your current Match model allows nullable teams, so full bracket draft is possible.
+
+---
+
+## 9. Generator 5 – Advancement Helper
+
+### 9.1 Purpose
+Take finished group standings and propose/create the next knockout round.
+
+### 9.2 Typical situation
+Group stage is finished.  
+Top 2 from each group should advance.
+
+### 9.3 Suggested CLI
+
+```bash
+python manage.py advance_from_groups --phase 3 --advance-per-group 2
+python manage.py advance_from_groups --phase 3 --advance-per-group 2 --create-knockout
+```
+
+### 9.4 Logic
+
+1. Load all groups in phase
+2. For each group, sort `TournamentPhaseGroupTeam` by:
+   - points
+   - goal difference
+   - goals for
+   - (optional) head-to-head later
+3. Take top N teams
+4. Return qualified list
+5. Optionally call knockout generator
+
+### 9.5 Important
+Sorting rules must be explicit and documented.  
+First version can use:
+
+1. `points` DESC  
+2. `goal_difference` DESC  
+3. `goals_for` DESC  
+4. `goals_against` ASC  
+5. team name ASC as final stable tiebreaker
+
+---
+
+## 10. Recalculation Commands
+
+### 10.1 Purpose
+Repair derived data after bugs, manual DB edits, or event corrections.
+
+### 10.2 Suggested commands
+
+```bash
+python manage.py recalculate_match --match 55
+python manage.py recalculate_edition --edition 8
+python manage.py recalculate_player_stats --edition 8
+python manage.py recalculate_group_standings --phase 3
+```
+
+### 10.3 What each does
+
+#### recalculate_match
+- reload all MatchEvents for match
+- recompute score fields
+- optionally recompute related player stats for that match
+
+#### recalculate_group_standings
+- recompute played/wins/draws/losses/points/goals for group teams
+- based on finished matches in that group
+
+#### recalculate_edition
+- run match score recalculation for all matches
+- run player stats recalculation
+- run group standings recalculation
+
+### 10.4 Why these are mandatory for serious development
+Because live systems drift if event edits are frequent.  
+Recalculation is your safety net.
+
+---
+
+## 11. Service-level architecture
+
+### Example service interfaces
+
+```python
+class DemoTournamentGenerator:
+    def generate(self, *, name, year, teams_count, players_per_team, with_events, seed=None):
+        ...
+
+
+class GroupDrawService:
+    def draw(self, *, phase, team_participations, seed=None, force=False):
+        ...
+
+
+class GroupFixtureGenerator:
+    def generate_for_phase(self, *, phase, double_round=False, force=False):
+        ...
+
+
+class KnockoutGenerator:
+    def generate(self, *, edition, teams, include_third_place=False):
+        ...
+
+
+class AdvancementService:
+    def get_qualified_teams(self, *, phase, advance_per_group=2):
+        ...
+```
+
+Commands should stay thin:
+
+```python
+def handle(self, *args, **options):
+    result = GroupFixtureGenerator().generate_for_phase(...)
+    self.stdout.write(self.style.SUCCESS(result.summary()))
+```
+
+---
+
+## 12. Safety rules for all generators
+
+Every generator must implement these safeguards:
+
+1. **Scope checks**
+   - all objects belong to same edition
+
+2. **Existence checks**
+   - required statuses/event types exist
+   - fail with message to run seeds if missing
+
+3. **Conflict checks**
+   - existing matches/assignments block generation unless `--force`
+
+4. **Transaction safety**
+   - whole generation in `transaction.atomic()`
+
+5. **Clear failure messages**
+   - no stack-trace-only failures for expected business conflicts
+
+---
+
+## 13. Logging and audit
+
+Generators should log:
+
+- who ran the command (if available)
+- edition/phase IDs
+- number of created objects
+- whether force mode was used
+
+Example:
+```text
+INFO generate_group_fixtures phase_id=3 created_matches=12 force=False
+```
+
+For destructive rebuilds with `--force`, use WARNING level.
+
+---
+
+## 14. Testing strategy for generators
+
+Minimum tests:
+
+### Demo generator
+- creates expected counts
+- can run twice with different names without crash
+
+### Draw
+- distributes all teams
+- respects capacity
+- is reproducible with same seed
+
+### Fixtures
+- correct number of matches for N teams
+- no duplicate pairings in single round-robin
+
+### Knockout
+- rejects non power-of-two in v1
+- creates expected number of phases/matches
+
+### Advancement
+- selects top N by ranking rules
+
+### Recalculation
+- score after events is correct
+- deleting event and recalculating restores correct state
+
+---
+
+## 15. Implementation order
+
+Implement in this order:
+
+1. `recalculate_match` basics  
+2. `generate_demo_tournament` without events  
+3. `draw_groups`  
+4. `generate_group_fixtures`  
+5. enhance demo generator to use draw + fixtures  
+6. `generate_knockout`  
+7. `advance_from_groups`  
+8. demo generator with events  
+9. edition-wide recalculation  
+
+This order gives value quickly.
+
+---
+
+## 16. Practical development workflow after this phase
+
+A normal development day should look like:
+
+```bash
+python manage.py seed_all
+python manage.py generate_demo_tournament --teams 12 --with-events --seed 42
+python manage.py runserver
+```
+
+Then frontend/live testing starts immediately on realistic data.
+
+---
+
+## 17. Definition of Done (Phase 6.6)
+
+This phase is complete when:
+
+- [ ] Demo tournament generator works
+- [ ] Teams can be drawn into groups by command/service
+- [ ] Group fixtures can be generated automatically
+- [ ] Knockout structure can be generated for power-of-two brackets
+- [ ] Advancement helper can select top teams from groups
+- [ ] Recalculation commands can repair derived data
+- [ ] All generators are transactional and safe by default
+- [ ] `--force` is required for destructive regeneration
+- [ ] Commands print clear summaries
+- [ ] Basic tests cover pairing counts and draw reproducibility
+- [ ] Demo data is good enough for frontend and live testing
+
+---
+
+## 18. What comes after this phase
+
+After generators are ready, development becomes much faster and the next practical step is real implementation execution:
+
+1. implement backend phases in order
+2. use generators daily during development
+3. then integrate frontend against realistic data
+
+Optional later upgrades:
+- UI buttons that call these generators
+- fair draw pots
+- bye support in knockout
+- calendar-aware match scheduling
+
+---
+
+**End of Phase 6.6 document**
 
 # Final note
 

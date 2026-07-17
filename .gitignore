@@ -10,6 +10,8 @@ venv/
 *.sqlite3
 staticfiles/
 media/
+logs/
+*.log
 
 # Node
 node_modules/

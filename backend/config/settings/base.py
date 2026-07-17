@@ -180,12 +180,18 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "%(asctime)s %(levelname)s [%(name)s] %(message)s",
+            "format": (
+                "%(asctime)s %(levelname)s [%(name)s] "
+                "%(message)s"
+            ),
         },
     },
     "handlers": {
@@ -193,27 +199,57 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "turnir.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 10,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+    },
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
     },
     "loggers": {
-        "turnir.api": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "turnir.auth": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "turnir.api": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "turnir.auth": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "turnir.permissions": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,
         },
         "turnir.matches.live": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,
         },
         "turnir.services": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,
         },
         "turnir.security": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "WARNING",
             "propagate": False,
         },

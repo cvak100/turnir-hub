@@ -1,13 +1,19 @@
 # turnir-hub frontend
 
-Next.js application for the turnir-hub platform.
+Vite + React + TypeScript client for the turnir-hub API (Phase 7).
+
+## Prerequisites
+
+- Node.js 20+ recommended
+- Backend running (default API: `http://localhost:8000/api/v1`, WebSocket: `ws://localhost:8000/ws`)
 
 ## Setup
 
 ```bash
+cd frontend
 npm install
-copy .env.local.example .env.local   # Windows
-# cp .env.local.example .env.local   # macOS / Linux
+copy .env.example .env   # Windows
+# cp .env.example .env   # macOS / Linux
 ```
 
 ## Run
@@ -16,14 +22,17 @@ copy .env.local.example .env.local   # Windows
 npm run dev
 ```
 
-App runs at [http://localhost:3000](http://localhost:3000).
+App: [http://localhost:3000](http://localhost:3000)
 
-## Structure
+## Build
 
-| Path | Purpose |
-|------|---------|
-| `src/app` | App Router routes and layouts |
-| `src/modules` | Feature modules (tournaments, matches, …) |
-| `src/components` | Shared UI and layout components |
-| `src/lib` | API client, auth helpers, utilities |
-| `src/types` | Shared TypeScript types |
+```bash
+npm run build
+npm run preview
+```
+
+## Notes
+
+- All HTTP calls go through `src/shared/api` and module services — UI never calls `fetch` directly.
+- Auth tokens are stored in `localStorage` as `th_access` / `th_refresh`.
+- Live match page uses REST for initial load and WebSocket for updates.

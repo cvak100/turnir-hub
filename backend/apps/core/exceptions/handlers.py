@@ -8,6 +8,7 @@ from rest_framework.views import exception_handler
 from apps.core.exceptions.domain import DomainError
 
 logger = logging.getLogger("turnir.api")
+auth_logger = logging.getLogger("turnir.auth")
 REQUEST_ID_HEADER = "X-Request-ID"
 
 
@@ -67,12 +68,6 @@ def custom_exception_handler(exc, context):
         elif status_code == status.HTTP_403_FORBIDDEN:
             code = "permission_denied"
             message = "You do not have permission to perform this action."
-            logger.warning(
-                "permission_denied request_id=%s path=%s user_id=%s",
-                request_id,
-                getattr(request, "path", None),
-                getattr(getattr(request, "user", None), "id", None),
-            )
         elif status_code == status.HTTP_404_NOT_FOUND:
             code = "not_found"
             message = "Resource not found."
@@ -86,6 +81,24 @@ def custom_exception_handler(exc, context):
             details = {}
         elif not isinstance(details, dict):
             details = {"non_field_errors": details}
+
+        log_message = (
+            "%s request_id=%s code=%s message=%s path=%s method=%s user_id=%s status=%s"
+        )
+        log_args = (
+            code,
+            request_id,
+            code,
+            message,
+            getattr(request, "path", None),
+            getattr(request, "method", None),
+            getattr(getattr(request, "user", None), "id", None),
+            status_code,
+        )
+        if status_code == status.HTTP_401_UNAUTHORIZED:
+            auth_logger.warning(log_message, *log_args)
+        elif status_code >= 400:
+            logger.warning(log_message, *log_args)
 
         response.data = _error_payload(
             code=code,
