@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+﻿import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ErrorBanner, PageHeader } from "@/shared/components";
 import { teamService } from "../services/teamService";
@@ -39,7 +39,7 @@ export function TeamCreatePage() {
         actions={<Link to="/teams">Back</Link>}
       />
       <ErrorBanner error={error} />
-      <form className="stack-form" onSubmit={onSubmit}>
+      <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
         <label>
           Name
           <input value={name} onChange={(e) => setName(e.target.value)} required />
@@ -68,7 +68,7 @@ export function TeamCreatePage() {
           Status is required by the API. Use a valid TeamStatus id from the
           backend.
         </p>
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
           {submitting ? "Creating…" : "Create team"}
         </button>
       </form>

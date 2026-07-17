@@ -1,8 +1,11 @@
 from django.contrib import admin
 
 from .models import (
+    Country,
     Permission,
     Person,
+    PersonRole,
+    PersonRoleType,
     PersonStatus,
     Role,
     RolePermission,
@@ -15,12 +18,39 @@ class StatusAdminMixin:
         return request.user.is_superuser
 
 
+@admin.register(Country)
+class CountryAdmin(StatusAdminMixin, admin.ModelAdmin):
+    list_display = ("name", "code", "iso2", "order", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "code", "iso2")
+    ordering = ("order", "name")
+
+
 @admin.register(PersonStatus)
 class PersonStatusAdmin(StatusAdminMixin, admin.ModelAdmin):
     list_display = ("name", "code", "color", "order", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name", "code")
     ordering = ("order", "name")
+
+
+@admin.register(PersonRoleType)
+class PersonRoleTypeAdmin(StatusAdminMixin, admin.ModelAdmin):
+    list_display = ("name", "code", "order", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "code")
+    ordering = ("order", "name")
+
+
+@admin.register(PersonRole)
+class PersonRoleAdmin(admin.ModelAdmin):
+    list_display = ("person", "role_type", "created_at")
+    list_filter = ("role_type",)
+    search_fields = (
+        "person__first_name",
+        "person__last_name",
+        "role_type__code",
+    )
 
 
 @admin.register(Person)
@@ -32,7 +62,7 @@ class PersonAdmin(admin.ModelAdmin):
         "status",
         "show_as_anonymous",
     )
-    list_filter = ("status", "show_as_anonymous")
+    list_filter = ("status", "show_as_anonymous", "person_roles__role_type")
     search_fields = ("first_name", "last_name", "email", "nickname")
 
 

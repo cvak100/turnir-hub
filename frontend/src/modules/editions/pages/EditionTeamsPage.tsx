@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+﻿import { type FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -89,13 +89,13 @@ export function EditionTeamsPage() {
       ) : null}
 
       {canRegister ? (
-        <section className="panel">
+        <section className="border-frame border-frame--md">
           <h2>Register existing team</h2>
           <p className="muted">
             This creates a TeamParticipation for the edition (not a new base
             Team).
           </p>
-          <form className="stack-form" onSubmit={onSubmit}>
+          <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
             <label>
               Team id
               <input
@@ -113,7 +113,7 @@ export function EditionTeamsPage() {
                 placeholder="Defaults to team name if empty"
               />
             </label>
-            <button type="submit" disabled={submitting}>
+            <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
               {submitting ? "Registering…" : "Register team"}
             </button>
           </form>

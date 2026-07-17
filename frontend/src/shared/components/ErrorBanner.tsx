@@ -1,4 +1,4 @@
-import { isApiError } from "@/shared/api";
+﻿import { isApiError } from "@/shared/api";
 
 type Props = {
   error: unknown;
@@ -9,7 +9,7 @@ export function ErrorBanner({ error }: Props) {
 
   if (isApiError(error)) {
     return (
-      <div className="error-banner" role="alert">
+      <div className="error-banner border-frame border-frame--md" role="alert">
         <strong>{error.message}</strong>
         <div className="muted">
           code: {error.code}
@@ -23,7 +23,7 @@ export function ErrorBanner({ error }: Props) {
     error instanceof Error ? error.message : "Unexpected error occurred.";
 
   return (
-    <div className="error-banner" role="alert">
+    <div className="error-banner border-frame border-frame--md" role="alert">
       <strong>{message}</strong>
     </div>
   );

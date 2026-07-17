@@ -1,39 +1,21 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
-import { useAuth } from "@/shared/auth";
+import { Link, Outlet } from "react-router-dom";
+import { AppNav } from "@/app/layout/AppNav";
 
 export function AppLayout() {
-  const { user, logout, loading } = useAuth();
-
   return (
     <div className="app-shell">
-      <header className="app-nav">
+      <header className="app-header">
         <Link to="/" className="brand">
           turnir-hub
         </Link>
-        <nav>
-          <NavLink to="/tournaments">Tournaments</NavLink>
-          <NavLink to="/teams">Teams</NavLink>
-          <NavLink to="/players">Players</NavLink>
-          <NavLink to="/dashboard">Dashboard</NavLink>
-        </nav>
-        <div className="nav-auth">
-          {loading ? (
-            <span className="muted">…</span>
-          ) : user ? (
-            <>
-              <span className="muted">{user.username}</span>
-              <button type="button" className="linkish" onClick={logout}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <NavLink to="/login">Login</NavLink>
-          )}
-        </div>
+        <AppNav />
       </header>
       <main className="app-main">
         <Outlet />
       </main>
+      <footer className="app-footer">
+        handwritten tournament notebook
+      </footer>
     </div>
   );
 }

@@ -13,7 +13,10 @@ const defaults: Record<Props["variant"], { title: string; message: string }> = {
 export function StateMessage({ variant, title, message }: Props) {
   const fallback = defaults[variant];
   return (
-    <div className={`state-message state-${variant}`} role="status">
+    <div
+      className={`state-message state-${variant} border-frame border-frame--md`}
+      role="status"
+    >
       <strong>{title ?? fallback.title}</strong>
       <p>{message ?? fallback.message}</p>
     </div>

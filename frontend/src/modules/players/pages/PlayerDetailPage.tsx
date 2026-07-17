@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -31,7 +31,7 @@ export function PlayerDetailPage() {
       <ErrorBanner error={player.error} />
       {player.loading ? <StateMessage variant="loading" /> : null}
       {player.data ? (
-        <section className="panel">
+        <section className="border-frame border-frame--md">
           <ul className="plain-list">
             <li>Id: {player.data.id}</li>
             <li>Person id: {player.data.person.id}</li>

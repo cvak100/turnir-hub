@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+﻿import { type FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -73,7 +73,7 @@ export function TournamentFormPage({ mode }: { mode: Mode }) {
         actions={<Link to="/tournaments">Back</Link>}
       />
       <ErrorBanner error={error ?? existing.error} />
-      <form className="stack-form" onSubmit={onSubmit}>
+      <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
         <label>
           Name
           <input
@@ -99,7 +99,7 @@ export function TournamentFormPage({ mode }: { mode: Mode }) {
             rows={4}
           />
         </label>
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
           {submitting ? "Saving…" : "Save"}
         </button>
       </form>

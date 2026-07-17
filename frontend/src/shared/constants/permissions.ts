@@ -11,6 +11,7 @@ export const Permissions = {
   TeamParticipationManage: "team.participation.manage",
   PlayerAssign: "player.assign",
   PhaseManage: "phase.manage",
+  AdminFullAccess: "admin.full_access",
 } as const;
 
 export type PermissionCode = (typeof Permissions)[keyof typeof Permissions] | string;

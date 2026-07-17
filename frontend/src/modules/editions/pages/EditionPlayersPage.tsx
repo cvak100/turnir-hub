@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+﻿import { type FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -94,9 +94,9 @@ export function EditionPlayersPage() {
       ) : null}
 
       {canAssign ? (
-        <section className="panel">
+        <section className="border-frame border-frame--md">
           <h2>Assign player</h2>
-          <form className="stack-form" onSubmit={onSubmit}>
+          <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
             <label>
               Player id
               <input
@@ -139,7 +139,7 @@ export function EditionPlayersPage() {
               />
               Captain
             </label>
-            <button type="submit" disabled={submitting}>
+            <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
               {submitting ? "Assigning…" : "Assign player"}
             </button>
           </form>

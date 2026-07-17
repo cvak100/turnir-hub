@@ -1,82 +1,237 @@
+/* turnir-hub — notepad style (tournaments DNA) */
+
 :root {
-  color-scheme: light;
-  --bg: #f5f5f4;
-  --surface: #ffffff;
-  --text: #1c1917;
-  --muted: #57534e;
-  --border: #d6d3d1;
-  --accent: #1d4ed8;
-  --danger-bg: #fef2f2;
-  --danger-text: #991b1b;
-  --ok: #166534;
-  --warn: #92400e;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--bg);
+  --paper: #fff8dc;
+  --paper-strong: #f9e79f;
+  --ink: #333;
+  --blue: blue;
+  --red: #c1121f;
+  --font: "Architects Daughter", cursive;
+
+  --sketch-a: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M4,2 L5,95 M4,2 L7,99 M4,3 L95,4 M3,3 L95,6 M92,2 L97,99 M94,6 L95,95 M6,94 L97,96' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round'/></svg>");
+  --sketch-b: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M6,4 L5,97 M6,2 L7,95 M4,4 L99,8 M3,7 L95,9 M94,6 L97,97 M94,6 L95,99 M6,94 L97,96' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round'/></svg>");
+  --sketch-c: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M5,1 L5,95 M4,2 L7,96 M4,5 L95,4 M3,2 L95,6 M94,2 L97,97 M94,6 L95,91 M6,94 L98,93' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round'/></svg>");
+  --sketch-b-blue: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M6,4 L5,97 M6,2 L7,95 M4,4 L99,8 M3,7 L95,9 M94,6 L97,97 M94,6 L95,99 M6,94 L97,96' fill='none' stroke='blue' stroke-width='1.2' stroke-linecap='round'/></svg>");
+  --sketch-a-blue: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M4,2 L5,95 M4,2 L7,99 M4,3 L95,4 M3,3 L95,6 M92,2 L97,99 M94,6 L95,95 M6,94 L97,96' fill='none' stroke='blue' stroke-width='1.2' stroke-linecap='round'/></svg>");
+  --underline: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M1,1 L99,2 M2,2 L98,2' stroke='black' stroke-width='1' fill='none' stroke-linecap='round'/></svg>");
+  --underline-blue: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M1,1 L99,2 M2,2 L98,2' stroke='blue' stroke-width='1' fill='none' stroke-linecap='round'/></svg>");
+  --rule: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M1,3 L98,4 M2,2 L97,5' stroke='black' stroke-width='1.2' fill='none' stroke-linecap='round'/></svg>");
+  --rule-gray: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0,3 L100,4 M2,2 L98,5' stroke='gray' stroke-width='1.2' fill='none' stroke-linecap='round'/></svg>");
+  --rule-blue: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0,3 L100,4 M2,2 L98,5' stroke='blue' stroke-width='1.2' fill='none' stroke-linecap='round'/></svg>");
+  --header-line: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'><path d='M1,3 L98,5 M0,1 L99,7 M2,7 L99,2' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round'/></svg>");
+  --footer-line: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 16' preserveAspectRatio='none'><path d='M0,1 L99,7 M1,3 L98,5 M2,7 L99,2' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round'/></svg>");
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  font-family: var(--font);
+  font-weight: 400;
+  background-color: var(--paper);
+  color: var(--ink);
+  line-height: 1.45;
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
+h1,
+h2,
+h3 {
+  font-weight: 700;
 }
 
-a:hover {
-  text-decoration: underline;
+h1 {
+  font-size: 1.85rem;
+  transform: rotate(-0.4deg);
 }
 
+h2 {
+  font-size: 1.35rem;
+}
+
+.muted {
+  color: #555;
+}
+
+/*
+  ═══════════════════════════════════════════
+  BORDER SYSTEM — only .border-frame + size
+  ═══════════════════════════════════════════
+  slice = % of SVG source (100×100), not of the element.
+  border width = em → scales with font-size of the control.
+
+  --sm  → gumbi, nav, badge, checkbox
+  --md  → paneli, forme (default)
+  --lg  → večji bloki
+  --xl  → hero / veliki okvirji
+
+  Usage: class="border-frame border-frame--md"
+*/
+.border-frame {
+  --slice: 22%;
+  --frame-border: 0.5em;
+  --frame-stroke: var(--sketch-a);
+  box-sizing: border-box;
+  background-color: transparent;
+  border: var(--frame-border) solid transparent;
+  border-image-source: var(--frame-stroke);
+  border-image-slice: var(--slice);
+  border-image-repeat: stretch;
+}
+
+.border-frame--sm {
+  --slice: 12%;
+  --frame-border: 0.35em;
+}
+
+.border-frame--md {
+  --slice: 22%;
+  --frame-border: clamp(0.35em, 1.2vw, 0.55em);
+}
+
+.border-frame--lg {
+  --slice: 30%;
+  --frame-border: 0.55em;
+}
+
+.border-frame--xl {
+  --slice: 36%;
+  --frame-border: 0.65em;
+}
+
+/* Stroke variants (optional, still on border-frame) */
+.border-frame--stroke-a {
+  --frame-stroke: var(--sketch-a);
+}
+.border-frame--stroke-b {
+  --frame-stroke: var(--sketch-b);
+}
+.border-frame--stroke-c {
+  --frame-stroke: var(--sketch-c);
+}
+
+/* ===== Shell ===== */
 .app-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.app-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+.app-header {
+  position: relative;
+  text-align: center;
+  padding: 20px;
+  background-color: var(--paper-strong);
 }
 
-.app-nav nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1rem;
+.app-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 6px;
+  background-image: var(--header-line);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
 }
 
-.app-nav a.active {
-  font-weight: 600;
-  text-decoration: underline;
+.app-footer {
+  position: relative;
+  text-align: center;
+  padding: 10px;
+  margin-top: 40px;
+  background-color: var(--paper-strong);
+  color: #555;
+}
+
+.app-footer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 8px;
+  background-image: var(--footer-line);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
 }
 
 .brand {
+  display: inline-block;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text);
+  color: var(--ink);
+  text-decoration: none;
+  transform: rotate(-0.8deg);
+  margin-bottom: 8px;
 }
 
-.nav-auth {
+.brand:hover {
+  color: var(--blue);
+}
+
+.app-nav-row {
   display: flex;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Nav chips: layout + interaction; border via FRAME.sm in markup */
+.app-nav-row a,
+.app-nav-row .nav-action {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 4px 10px;
+  font-size: 1.15rem;
+  font-weight: bold;
+  font-family: inherit;
+  color: var(--ink);
+  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+  --frame-stroke: var(--sketch-b);
+  transform: rotate(-0.8deg);
+  transition: all 0.2s ease;
+}
+
+.app-nav-row a:nth-child(odd),
+.app-nav-row .nav-action:nth-child(odd) {
+  --frame-stroke: var(--sketch-a);
+}
+
+.app-nav-row a:hover,
+.app-nav-row a.active,
+.app-nav-row .nav-action:hover {
+  transform: rotate(0.4deg);
+  --frame-stroke: var(--sketch-b-blue);
+  border-image-source: var(--frame-stroke);
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.app-nav-row a:nth-child(odd):hover,
+.app-nav-row a:nth-child(odd).active {
+  --frame-stroke: var(--sketch-a-blue);
+  border-image-source: var(--frame-stroke);
 }
 
 .app-main {
   width: min(960px, 100%);
   margin: 0 auto;
-  padding: 1.25rem;
+  padding: 28px 16px 40px;
   flex: 1;
 }
 
@@ -88,6 +243,7 @@ a:hover {
 
 .page.narrow {
   max-width: 520px;
+  margin-inline: auto;
 }
 
 .page-header {
@@ -97,56 +253,174 @@ a:hover {
   align-items: flex-start;
 }
 
-.page-header h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
-}
-
 .page-header-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
   align-items: center;
 }
 
-.muted {
-  color: var(--muted);
+/* Content box padding when framed as md+ */
+.border-frame.border-frame--md,
+.border-frame.border-frame--lg,
+.border-frame.border-frame--xl {
+  width: 100%;
+  max-width: 100%;
+  padding: 16px 18px;
 }
 
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 1rem;
+.border-frame.border-frame--sm {
+  width: auto;
+  max-width: 100%;
+  padding: 4px 10px;
 }
 
+button.border-frame.border-frame--sm,
+.button-link.border-frame.border-frame--sm {
+  padding: 6px 12px;
+}
+
+input.sketch-check.border-frame.border-frame--sm,
+.checkbox-row input.border-frame.border-frame--sm {
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+}
+
+/* Semantic layout (NO borders — add border-frame separately) */
 .stack-form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 1rem;
+  gap: 0.85rem;
+}
+
+.stack-form h2 {
+  margin-top: 0;
+}
+
+.error-banner,
+.state-error {
+  color: var(--red);
+  font-weight: bold;
+  --frame-stroke: var(--sketch-c);
+}
+
+.state-message strong {
+  display: block;
+}
+
+/* Buttons — typography/interaction only; border via FRAME.sm */
+button,
+.button-link {
+  display: inline-block;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: bold;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  --frame-stroke: var(--sketch-b);
+  transform: rotate(-0.5deg);
+  transition: all 0.2s ease;
+}
+
+button:hover,
+.button-link:hover {
+  transform: rotate(0.4deg);
+  --frame-stroke: var(--sketch-b-blue);
+  border-image-source: var(--frame-stroke);
+  color: var(--blue);
+  background: transparent;
+  text-decoration: none;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-secondary {
+  --frame-stroke: var(--sketch-a);
+}
+
+.linkish {
+  border: none !important;
+  border-image: none !important;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: bold;
+  padding: 0 2px 4px;
+  cursor: pointer;
+  background-image: var(--underline);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 6px;
+  transform: none !important;
+}
+
+.linkish:hover {
+  color: var(--blue);
+  background-image: var(--underline-blue);
+  background-color: transparent;
+  transform: rotate(-2deg) !important;
+}
+
+.app-main a:not(.button-link):not(.brand):not(.border-frame) {
+  display: inline-block;
+  font-weight: bold;
+  color: var(--ink);
+  text-decoration: none;
+  background-image: var(--underline);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 6px;
+  padding-bottom: 3px;
+}
+
+.app-main a:not(.button-link):not(.brand):not(.border-frame):hover {
+  color: var(--blue);
+  transform: rotate(-1.5deg);
+  background-image: var(--underline-blue);
+  text-decoration: none;
 }
 
 .stack-form label {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.95rem;
-}
-
-.stack-form input,
-.stack-form textarea,
-.stack-form select,
-button {
-  font: inherit;
+  gap: 0.3rem;
+  font-size: 1.05rem;
 }
 
 .stack-form input,
 .stack-form textarea,
 .stack-form select {
-  padding: 0.45rem 0.55rem;
-  border: 1px solid var(--border);
-  background: #fff;
+  width: 100%;
+  padding: 8px 4px;
+  font: inherit;
+  font-size: 1.1rem;
+  color: var(--ink);
+  background-color: transparent;
+  border: none;
+  outline: none;
+  background-image: var(--underline);
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 6px;
+}
+
+.stack-form input:focus,
+.stack-form textarea:focus,
+.stack-form select:focus {
+  background-image: var(--underline-blue);
+}
+
+.stack-form textarea {
+  min-height: 4rem;
+  resize: vertical;
 }
 
 .checkbox-row {
@@ -155,43 +429,101 @@ button {
   gap: 0.5rem !important;
 }
 
-button,
-.button-link {
-  display: inline-block;
-  padding: 0.45rem 0.8rem;
-  border: 1px solid var(--border);
-  background: #e7e5e4;
-  color: var(--text);
+/* Checkbox control — size via FRAME.sm in markup */
+.checkbox-row input[type="checkbox"],
+input.sketch-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  padding: 0 !important;
+  flex-shrink: 0;
+  vertical-align: middle;
   cursor: pointer;
-  text-decoration: none;
+  background-color: transparent;
+  background-image: none;
+  --frame-stroke: var(--sketch-b);
+  transform: rotate(-1deg);
+  transition: all 0.2s ease;
 }
 
-button:hover,
-.button-link:hover {
-  background: #d6d3d1;
-  text-decoration: none;
+.checkbox-row input[type="checkbox"]:hover,
+input.sketch-check:hover {
+  --frame-stroke: var(--sketch-b-blue);
+  border-image-source: var(--frame-stroke);
+  transform: rotate(0.4deg);
 }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.checkbox-row input[type="checkbox"]:checked,
+input.sketch-check:checked {
+  --frame-stroke: var(--sketch-b-blue);
+  border-image-source: var(--frame-stroke);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 8.5 L6.5 12 L13 4' fill='none' stroke='blue' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 75% 75%;
 }
 
-.button-secondary {
-  background: #fff;
+.checkbox-row input[type="checkbox"]:focus-visible,
+input.sketch-check:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
-.linkish {
+/* Tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
   border: none;
-  background: none;
-  color: var(--accent);
-  padding: 0;
-  cursor: pointer;
+  background: transparent;
 }
 
-.linkish:hover {
-  text-decoration: underline;
-  background: none;
+.data-table th,
+.data-table td {
+  border: none;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+  background: transparent;
+}
+
+.data-table thead {
+  position: relative;
+}
+
+.data-table thead::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  width: 100%;
+  background-image: var(--rule);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+.data-table tbody tr {
+  position: relative;
+}
+
+.data-table tbody tr:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  width: 100%;
+  background-image: var(--rule-gray);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+.data-table tbody tr:hover::after {
+  background-image: var(--rule-blue);
 }
 
 .plain-list {
@@ -199,47 +531,11 @@ button:disabled {
   padding-left: 1.2rem;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--surface);
-}
-
-.data-table th,
-.data-table td {
-  border: 1px solid var(--border);
-  padding: 0.5rem 0.6rem;
-  text-align: left;
-  vertical-align: top;
-}
-
-.data-table th {
-  background: #fafaf9;
-}
-
-.state-message {
-  padding: 1rem;
-  border: 1px dashed var(--border);
-  background: var(--surface);
-}
-
-.state-error {
-  border-color: #fecaca;
-  background: var(--danger-bg);
-  color: var(--danger-text);
-}
-
-.error-banner {
-  padding: 0.75rem 1rem;
-  border: 1px solid #fecaca;
-  background: var(--danger-bg);
-  color: var(--danger-text);
-}
-
 .scoreline {
-  font-size: 2rem;
+  font-size: 2.4rem;
   font-weight: 700;
-  margin: 0.25rem 0;
+  margin: 0.35rem 0;
+  transform: rotate(-0.6deg);
 }
 
 .timeline {
@@ -247,51 +543,272 @@ button:disabled {
   padding-left: 1.25rem;
 }
 
-.ws-status {
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 0.9rem;
-}
-
 .ws-connected {
-  border-color: #bbf7d0;
-  color: var(--ok);
+  color: #166534;
 }
 
 .ws-connecting,
 .ws-disconnected {
-  border-color: #fde68a;
-  color: var(--warn);
+  color: #555;
 }
 
 .ws-error {
-  border-color: #fecaca;
-  color: var(--danger-text);
+  color: var(--red);
 }
 
 .row-actions {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .edit-event-picker {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border);
+  position: relative;
+}
+
+.edit-event-picker::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background-image: var(--rule);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
 .live-score {
   text-align: center;
 }
 
+.home-page .border-frame.border-frame--md:first-child {
+  text-align: center;
+}
+
+.home-lead,
+.home-page .muted {
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-page .row-actions {
+  justify-content: center;
+}
+
+.admin-search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.admin-search input,
+.admin-search select {
+  width: 100%;
+  padding: 8px 4px;
+  font: inherit;
+  font-size: 1.05rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  background-image: var(--underline);
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 6px;
+  color: var(--ink);
+}
+
+.admin-search input:focus,
+.admin-search select:focus {
+  background-image: var(--underline-blue);
+}
+
+.admin-bulk {
+  margin-bottom: 0.75rem;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table .col-check {
+  width: 2.2rem;
+  text-align: center;
+}
+
+.admin-table th .linkish {
+  font-weight: 700;
+}
+
+.role-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.role-fieldset legend {
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+  padding: 0;
+}
+
+.role-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.35rem 0.75rem;
+}
+
+.country-flag {
+  width: 1.4em;
+  height: auto;
+  display: inline-block;
+  vertical-align: middle;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.shirt-color-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.shirt-color-fieldset legend {
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+  padding: 0;
+}
+
+.shirt-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.shirt-color-swatch {
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+}
+
+.shirt-color-swatch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.shirt-color-chip {
+  display: inline-block;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 5px solid transparent;
+  border-image-source: var(--sketch-b);
+  border-image-slice: var(--slice, 8);
+  border-image-repeat: stretch;
+  --slice: 8;
+  --frame-border: 5px;
+  box-sizing: border-box;
+  vertical-align: middle;
+  transform: rotate(-1deg);
+  text-align: center;
+  line-height: 1.4rem;
+  font-size: 0.9rem;
+  background: transparent;
+}
+
+.shirt-color-swatch input:checked + .shirt-color-chip {
+  border-image-source: var(--sketch-b-blue);
+  transform: rotate(0.4deg) scale(1.08);
+}
+
+.shirt-color-swatch input:focus-visible + .shirt-color-chip {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.shirt-color-chip--inline {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: 0.25rem;
+}
+
+.shirt-color-selected {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+}
+
+.shirt-color-none .shirt-color-chip {
+  background: var(--paper);
+}
+
+.kit-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-end;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.kit-preview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 4.5rem;
+}
+
+.kit-icon {
+  display: block;
+  transform: rotate(-1deg);
+}
+
+.country-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.nationality-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.nationality-select-row select {
+  flex: 1;
+}
+
+.role-badge {
+  display: inline-block;
+  font-size: 0.95rem;
+  transform: rotate(-0.6deg);
+}
+
 @media (max-width: 640px) {
   .app-main {
-    padding: 1rem 0.75rem;
+    padding: 18px 10px 28px;
   }
 
   .page-header {
     flex-direction: column;
+  }
+
+  .border-frame.border-frame--md,
+  .border-frame.border-frame--lg,
+  .border-frame.border-frame--xl {
+    --frame-border: 0.4em;
+    padding: 12px;
+  }
+
+  .app-nav-row a,
+  .app-nav-row .nav-action {
+    font-size: 1rem;
   }
 }

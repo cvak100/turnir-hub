@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -129,7 +129,7 @@ export function LiveMatchPage() {
         actions={<Link to={`/matches/${matchId}`}>Match detail</Link>}
       />
 
-      <div className={`ws-status ws-${wsStatus}`}>
+      <div className={`ws-status ws-${wsStatus} border-frame border-frame--sm`}>
         Connection: {statusLabel(wsStatus)}
       </div>
 
@@ -137,7 +137,7 @@ export function LiveMatchPage() {
       {loading ? <StateMessage variant="loading" message="Loading match…" /> : null}
 
       {match ? (
-        <section className="panel live-score">
+        <section className="border-frame border-frame--md live-score">
           <p className="scoreline">
             {match.home_score ?? 0} : {match.away_score ?? 0}
           </p>
@@ -151,14 +151,14 @@ export function LiveMatchPage() {
             ) : null}
           </p>
           {canFinish && match.status?.code === "live" ? (
-            <button type="button" onClick={() => void finishMatch()} disabled={busy}>
+            <button type="button" className="border-frame border-frame--sm" onClick={() => void finishMatch()} disabled={busy}>
               {busy ? "Finishing…" : "Finish match"}
             </button>
           ) : null}
         </section>
       ) : null}
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Timeline</h2>
         {events.length === 0 ? (
           <StateMessage variant="empty" message="No events yet." />

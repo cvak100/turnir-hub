@@ -1,13 +1,19 @@
 from django.db import transaction
 
-from apps.players.models import Team
+from apps.players.models import Team, TeamStatus
 
 
 class TeamService:
     @staticmethod
     @transaction.atomic
     def create_team(*, data: dict) -> Team:
-        return Team.objects.create(**data)
+        payload = dict(data)
+        if payload.get("status") is None:
+            payload["status"] = (
+                TeamStatus.objects.filter(code="active").first()
+                or TeamStatus.objects.order_by("order").first()
+            )
+        return Team.objects.create(**payload)
 
     @staticmethod
     @transaction.atomic

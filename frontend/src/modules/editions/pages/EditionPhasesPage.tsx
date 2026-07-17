@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -51,7 +51,7 @@ function PhaseGroupsBlock({
   );
 
   return (
-    <section className="panel">
+    <section className="border-frame border-frame--md">
       <h2>
         {phaseName}{" "}
         <span className="muted">

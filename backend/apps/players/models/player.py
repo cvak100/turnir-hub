@@ -10,10 +10,13 @@ class Player(models.Model):
         related_name="player",
     )
     position = models.CharField(max_length=10, blank=True)
+    secondary_position = models.CharField(max_length=10, blank=True)
     preferred_jersey_number = models.PositiveIntegerField(null=True, blank=True)
     height_cm = models.PositiveIntegerField(null=True, blank=True)
     weight_kg = models.PositiveIntegerField(null=True, blank=True)
     dominant_foot = models.CharField(max_length=10, blank=True)
+    current_club = models.CharField(max_length=150, blank=True)
+    contract_until = models.DateField(null=True, blank=True)
     nationality = models.CharField(max_length=50, blank=True)
     photo = models.ImageField(upload_to="players/photos/", blank=True)
     biography = models.TextField(blank=True)

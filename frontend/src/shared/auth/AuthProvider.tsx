@@ -103,17 +103,22 @@ export function AuthProvider({ children }: Props) {
     [user],
   );
 
+  const isAdmin = Boolean(
+    user && (user.is_superuser || hasPermission("admin.full_access")),
+  );
+
   const value = useMemo(
     () => ({
       user,
       roles: user?.roles ?? [],
       loading,
+      isAdmin,
       login,
       logout,
       hasPermission,
       refreshMe,
     }),
-    [user, loading, login, logout, hasPermission, refreshMe],
+    [user, loading, isAdmin, login, logout, hasPermission, refreshMe],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

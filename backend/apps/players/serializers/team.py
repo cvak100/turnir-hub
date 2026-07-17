@@ -4,6 +4,19 @@ from apps.core.validators import validate_image_file
 from apps.players.models import Team, TeamStatus
 from apps.users.serializers import PersonMinimalSerializer
 
+SHIRT_COLOR_CODES = [
+    "white",
+    "black",
+    "red",
+    "blue",
+    "navy",
+    "green",
+    "yellow",
+    "orange",
+    "purple",
+    "pink",
+]
+
 
 class TeamStatusSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,6 +61,21 @@ class TeamCreateUpdateSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
         validators=[validate_image_file],
+    )
+    status = serializers.PrimaryKeyRelatedField(
+        queryset=TeamStatus.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    shirt_top = serializers.ChoiceField(
+        choices=[(c, c) for c in SHIRT_COLOR_CODES],
+        required=False,
+        allow_blank=True,
+    )
+    shirt_bottom = serializers.ChoiceField(
+        choices=[(c, c) for c in SHIRT_COLOR_CODES],
+        required=False,
+        allow_blank=True,
     )
 
     class Meta:

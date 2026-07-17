@@ -1,11 +1,14 @@
-import { type FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+﻿import { type FormEvent, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ErrorBanner, PageHeader } from "@/shared/components";
 import { playerService } from "../services/playerService";
 
 export function PlayerCreatePage() {
   const navigate = useNavigate();
-  const [personId, setPersonId] = useState("");
+  const [searchParams] = useSearchParams();
+  const [personId, setPersonId] = useState(
+    () => searchParams.get("person") ?? "",
+  );
   const [statusId, setStatusId] = useState("1");
   const [position, setPosition] = useState("");
   const [jersey, setJersey] = useState("");
@@ -39,14 +42,12 @@ export function PlayerCreatePage() {
         subtitle="Players require an existing Person record."
         actions={<Link to="/players">Back</Link>}
       />
-      <p className="panel muted">
-        Note: creating a player needs a valid <code>person</code> id. If you do
-        not have one yet, create the person via the backend/admin first. For
-        edition workflows, prefer assigning an existing player on the edition
-        Players page.
+      <p className="border-frame border-frame--md muted">
+        Note: creating a player needs a valid <code>person</code> id. Role{" "}
+        <code>player</code> on Person does not create this profile automatically.
       </p>
       <ErrorBanner error={error} />
-      <form className="stack-form" onSubmit={onSubmit}>
+      <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
         <label>
           Person id
           <input
@@ -80,7 +81,7 @@ export function PlayerCreatePage() {
             onChange={(e) => setJersey(e.target.value)}
           />
         </label>
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
           {submitting ? "Creating…" : "Create player"}
         </button>
       </form>

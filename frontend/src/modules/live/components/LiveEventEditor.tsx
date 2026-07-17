@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+﻿import { type FormEvent, useEffect, useState } from "react";
 import { ErrorBanner } from "@/shared/components";
 import {
   matchEventService,
@@ -109,14 +109,14 @@ export function LiveEventEditor({
   if (!canAdd && !canEdit) return null;
 
   return (
-    <section className="panel">
+    <section className="border-frame border-frame--md">
       <h2>{editingId != null ? "Edit event" : "Add event"}</h2>
       <p className="muted">
         Event type is a numeric id (no event-types list endpoint in this phase).
         Common codes map to backend EventType rows.
       </p>
       <ErrorBanner error={error} />
-      <form className="stack-form" onSubmit={onSubmit}>
+      <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
         <label>
           Event type id
           <input
@@ -237,7 +237,7 @@ export function LiveEventEditor({
           />
         </label>
         <div className="row-actions">
-          <button type="submit" disabled={submitting}>
+          <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
             {submitting
               ? "Saving…"
               : editingId != null
@@ -247,7 +247,7 @@ export function LiveEventEditor({
           {editingId != null ? (
             <button
               type="button"
-              className="button-secondary"
+              className="button-secondary border-frame border-frame--sm"
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);

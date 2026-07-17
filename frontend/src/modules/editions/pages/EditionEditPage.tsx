@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+﻿import { type FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -77,7 +77,7 @@ export function EditionEditPage() {
         actions={<Link to={`/editions/${editionId}`}>Back</Link>}
       />
       <ErrorBanner error={error ?? existing.error} />
-      <form className="stack-form" onSubmit={onSubmit}>
+      <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
         <label>
           Name
           <input value={name} onChange={(e) => setName(e.target.value)} required />
@@ -134,7 +134,7 @@ export function EditionEditPage() {
           />
           Public
         </label>
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
           {submitting ? "Saving…" : "Save"}
         </button>
       </form>

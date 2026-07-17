@@ -7,6 +7,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         call_command("seed_statuses")
+        call_command("seed_person_role_types")
+        call_command("seed_countries")
         call_command("seed_event_types")
         call_command("seed_roles_permissions")
         call_command("seed_templates")

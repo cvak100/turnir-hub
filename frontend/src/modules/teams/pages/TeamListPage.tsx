@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -16,7 +16,7 @@ export function TeamListPage() {
         title="Teams"
         subtitle="Long-lived base teams (not edition participations)."
         actions={
-          <Link className="button-link" to="/teams/new">
+          <Link className="button-link border-frame border-frame--sm" to="/teams/new">
             New team
           </Link>
         }

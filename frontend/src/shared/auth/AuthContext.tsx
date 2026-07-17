@@ -6,6 +6,7 @@ export type AuthContextValue = {
   user: AuthUser | null;
   roles: AuthUser["roles"];
   loading: boolean;
+  isAdmin: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   hasPermission: (code: PermissionCode, editionId?: number | null) => boolean;

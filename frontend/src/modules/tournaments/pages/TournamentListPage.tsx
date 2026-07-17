@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -22,7 +22,7 @@ export function TournamentListPage() {
         subtitle="Public tournament list."
         actions={
           user && hasPermission("tournament.create") ? (
-            <Link className="button-link" to="/tournaments/new">
+            <Link className="button-link border-frame border-frame--sm" to="/tournaments/new">
               New tournament
             </Link>
           ) : null

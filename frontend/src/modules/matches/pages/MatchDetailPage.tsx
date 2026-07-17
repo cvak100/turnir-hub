@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -55,7 +55,7 @@ export function MatchDetailPage() {
         }
         subtitle="Match detail"
         actions={
-          <Link className="button-link" to={`/live/matches/${matchId}`}>
+          <Link className="button-link border-frame border-frame--sm" to={`/live/matches/${matchId}`}>
             Open live
           </Link>
         }
@@ -63,7 +63,7 @@ export function MatchDetailPage() {
       <ErrorBanner error={actionError ?? match.error ?? phase.error} />
       {match.loading ? <StateMessage variant="loading" /> : null}
       {match.data ? (
-        <section className="panel">
+        <section className="border-frame border-frame--md">
           <p className="scoreline">
             {match.data.home_score ?? 0} : {match.data.away_score ?? 0}
           </p>
@@ -85,7 +85,7 @@ export function MatchDetailPage() {
             ) : null}
           </ul>
           {canStart && match.data.status?.code !== "live" && match.data.status?.code !== "finished" ? (
-            <button type="button" onClick={() => void startMatch()} disabled={busy}>
+            <button type="button" className="border-frame border-frame--sm" onClick={() => void startMatch()} disabled={busy}>
               {busy ? "Starting…" : "Start match"}
             </button>
           ) : null}

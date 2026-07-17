@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -26,7 +26,7 @@ export function TeamDetailPage() {
       <ErrorBanner error={team.error} />
       {team.loading ? <StateMessage variant="loading" /> : null}
       {team.data ? (
-        <section className="panel">
+        <section className="border-frame border-frame--md">
           <ul className="plain-list">
             <li>Id: {team.data.id}</li>
             <li>Short name: {team.data.short_name || "—"}</li>

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -17,7 +17,7 @@ export function PlayerListPage() {
         title="Players"
         subtitle="Global player list."
         actions={
-          <Link className="button-link" to="/players/new">
+          <Link className="button-link border-frame border-frame--sm" to="/players/new">
             New player
           </Link>
         }

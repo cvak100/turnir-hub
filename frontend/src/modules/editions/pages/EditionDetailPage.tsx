@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -53,7 +53,7 @@ export function EditionDetailPage() {
         }
         actions={
           canEdit ? (
-            <Link className="button-link" to={`/editions/${editionId}/edit`}>
+            <Link className="button-link border-frame border-frame--sm" to={`/editions/${editionId}/edit`}>
               Edit
             </Link>
           ) : null
@@ -67,7 +67,7 @@ export function EditionDetailPage() {
       {edition.loading ? <StateMessage variant="loading" /> : null}
 
       {edition.data ? (
-        <section className="panel">
+        <section className="border-frame border-frame--md">
           <ul className="plain-list">
             <li>
               Tournament:{" "}
@@ -85,7 +85,7 @@ export function EditionDetailPage() {
         </section>
       ) : null}
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Preparation snapshot</h2>
         <ul className="plain-list">
           <li>
@@ -97,7 +97,7 @@ export function EditionDetailPage() {
         </ul>
       </section>
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Subpages</h2>
         <ul className="plain-list">
           <li>

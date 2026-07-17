@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+﻿import { type FormEvent, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ErrorBanner, PageHeader } from "@/shared/components";
 import { useAuth } from "@/shared/auth";
@@ -45,7 +45,7 @@ export function LoginPage() {
         subtitle="Sign in with your turnir-hub account."
       />
       <ErrorBanner error={error} />
-      <form className="stack-form" onSubmit={onSubmit}>
+      <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
         <label>
           Username
           <input
@@ -65,7 +65,7 @@ export function LoginPage() {
             required
           />
         </label>
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
           {submitting ? "Signing in…" : "Sign in"}
         </button>
       </form>

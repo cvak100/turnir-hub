@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { PageHeader } from "@/shared/components";
 import { useAuth } from "@/shared/auth";
 
@@ -19,7 +19,7 @@ export function DashboardPage() {
         subtitle="Quick links and your current permissions."
       />
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Signed in as</h2>
         {user ? (
           <ul className="plain-list">
@@ -37,7 +37,7 @@ export function DashboardPage() {
         )}
       </section>
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Quick links</h2>
         <ul className="plain-list">
           <li>
@@ -57,7 +57,7 @@ export function DashboardPage() {
         </ul>
       </section>
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Roles</h2>
         {roles.length === 0 ? (
           <p className="muted">No roles assigned.</p>
@@ -75,7 +75,7 @@ export function DashboardPage() {
         )}
       </section>
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Permissions</h2>
         {permissionSet.size === 0 && !user?.is_superuser ? (
           <p className="muted">No permissions listed.</p>

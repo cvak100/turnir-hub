@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -35,7 +35,7 @@ export function TournamentDetailPage() {
         actions={
           user && hasPermission("tournament.edit") ? (
             <Link
-              className="button-link"
+              className="button-link border-frame border-frame--sm"
               to={`/tournaments/${tournamentId}/edit`}
             >
               Edit
@@ -46,7 +46,7 @@ export function TournamentDetailPage() {
       <ErrorBanner error={tournament.error ?? editions.error} />
       {tournament.loading ? <StateMessage variant="loading" /> : null}
       {tournament.data ? (
-        <section className="panel">
+        <section className="border-frame border-frame--md">
           <ul className="plain-list">
             <li>Sport: {tournament.data.sport?.name ?? "—"}</li>
             <li>Active: {tournament.data.is_active ? "yes" : "no"}</li>
@@ -55,7 +55,7 @@ export function TournamentDetailPage() {
         </section>
       ) : null}
 
-      <section className="panel">
+      <section className="border-frame border-frame--md">
         <h2>Editions</h2>
         {editions.loading ? <StateMessage variant="loading" /> : null}
         {!editions.loading && editions.data?.results.length === 0 ? (
