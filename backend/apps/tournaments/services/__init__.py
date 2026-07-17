@@ -1,9 +1,6 @@
 from .edition import TournamentEditionService
-from .phase import (
-    TournamentPhaseGroupService,
-    TournamentPhaseGroupTeamService,
-    TournamentPhaseService,
-)
+from .group import TournamentPhaseGroupService, TournamentPhaseGroupTeamService
+from .phase import TournamentPhaseService
 from .tournament import TournamentService
 
 __all__ = [

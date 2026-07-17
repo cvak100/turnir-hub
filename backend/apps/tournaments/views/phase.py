@@ -1,5 +1,4 @@
 from rest_framework import status, viewsets
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.tournaments.models import (
@@ -18,16 +17,42 @@ from apps.tournaments.serializers.phase import (
     TournamentPhaseGroupTeamListSerializer,
     TournamentPhaseListSerializer,
 )
-from apps.tournaments.services.phase import (
+from apps.tournaments.services.group import (
     TournamentPhaseGroupService,
     TournamentPhaseGroupTeamService,
-    TournamentPhaseService,
 )
+from apps.tournaments.services.phase import TournamentPhaseService
+from apps.users.permissions import HasTournamentPermission
+from apps.users.permissions.utils import set_action_permission
 
 
 class TournamentPhaseViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    queryset = TournamentPhase.objects.select_related("tournament_edition").all()
+    permission_classes = [HasTournamentPermission]
+
+    def get_permissions(self):
+        set_action_permission(
+            self,
+            {
+                "list": "phase.manage",
+                "retrieve": "phase.manage",
+                "create": "phase.manage",
+                "update": "phase.manage",
+                "partial_update": "phase.manage",
+                "destroy": "phase.manage",
+            },
+            default="phase.manage",
+        )
+        # Allow viewing with edition.view as fallback for list/retrieve
+        if self.action in ["list", "retrieve"]:
+            self.required_permission = "edition.view"
+        return super().get_permissions()
+
+    def get_queryset(self):
+        qs = TournamentPhase.objects.select_related("tournament_edition").all()
+        edition = self.request.query_params.get("tournament_edition")
+        if edition:
+            qs = qs.filter(tournament_edition_id=edition)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -61,10 +86,31 @@ class TournamentPhaseViewSet(viewsets.ModelViewSet):
         )
         return Response(output.data)
 
+    def destroy(self, request, *args, **kwargs):
+        phase = self.get_object()
+        TournamentPhaseService.validate_can_delete(phase=phase)
+        return super().destroy(request, *args, **kwargs)
+
 
 class TournamentPhaseGroupViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    queryset = TournamentPhaseGroup.objects.select_related("tournament_phase").all()
+    permission_classes = [HasTournamentPermission]
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            self.required_permission = "edition.view"
+        else:
+            self.required_permission = "phase.manage"
+        return super().get_permissions()
+
+    def get_queryset(self):
+        qs = TournamentPhaseGroup.objects.select_related(
+            "tournament_phase",
+            "tournament_phase__tournament_edition",
+        ).all()
+        phase = self.request.query_params.get("tournament_phase")
+        if phase:
+            qs = qs.filter(tournament_phase_id=phase)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -100,15 +146,32 @@ class TournamentPhaseGroupViewSet(viewsets.ModelViewSet):
         )
         return Response(output.data)
 
+    def destroy(self, request, *args, **kwargs):
+        group = self.get_object()
+        TournamentPhaseGroupService.validate_can_delete(group=group)
+        return super().destroy(request, *args, **kwargs)
+
 
 class TournamentPhaseGroupTeamViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasTournamentPermission]
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            self.required_permission = "edition.view"
+        else:
+            self.required_permission = "phase.manage"
+        return super().get_permissions()
 
     def get_queryset(self):
-        return TournamentPhaseGroupTeam.objects.select_related(
+        qs = TournamentPhaseGroupTeam.objects.select_related(
             "tournament_phase_group",
+            "tournament_phase_group__tournament_phase__tournament_edition",
             "team_participation",
         ).all()
+        group = self.request.query_params.get("tournament_phase_group")
+        if group:
+            qs = qs.filter(tournament_phase_group_id=group)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":

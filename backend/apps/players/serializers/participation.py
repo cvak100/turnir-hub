@@ -1,17 +1,20 @@
 from rest_framework import serializers
 
-from apps.players.models import TeamParticipation
+from apps.players.models import TeamParticipation, TeamStatus
 from apps.players.serializers.team import TeamListSerializer, TeamStatusSerializer
 from apps.users.serializers import PersonMinimalSerializer
 
 
+class TournamentEditionMinimalSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    year = serializers.IntegerField()
+
+
 class TeamParticipationListSerializer(serializers.ModelSerializer):
     status = TeamStatusSerializer(read_only=True)
-    team_name = serializers.CharField(source="team.name", read_only=True)
-    tournament_edition_name = serializers.CharField(
-        source="tournament_edition.name",
-        read_only=True,
-    )
+    team = TeamListSerializer(read_only=True)
+    tournament_edition = TournamentEditionMinimalSerializer(read_only=True)
 
     class Meta:
         model = TeamParticipation
@@ -19,9 +22,7 @@ class TeamParticipationListSerializer(serializers.ModelSerializer):
             "id",
             "participation_name",
             "team",
-            "team_name",
             "tournament_edition",
-            "tournament_edition_name",
             "status",
             "payment_status",
             "registered_at",
@@ -31,6 +32,7 @@ class TeamParticipationListSerializer(serializers.ModelSerializer):
 class TeamParticipationDetailSerializer(serializers.ModelSerializer):
     status = TeamStatusSerializer(read_only=True)
     team = TeamListSerializer(read_only=True)
+    tournament_edition = TournamentEditionMinimalSerializer(read_only=True)
     contact_person = PersonMinimalSerializer(read_only=True)
 
     class Meta:
@@ -51,6 +53,13 @@ class TeamParticipationDetailSerializer(serializers.ModelSerializer):
 
 
 class TeamParticipationCreateUpdateSerializer(serializers.ModelSerializer):
+    participation_name = serializers.CharField(required=False, allow_blank=True)
+    status = serializers.PrimaryKeyRelatedField(
+        queryset=TeamStatus.objects.all(),
+        required=False,
+    )
+    registered_at = serializers.DateTimeField(required=False)
+
     class Meta:
         model = TeamParticipation
         fields = [

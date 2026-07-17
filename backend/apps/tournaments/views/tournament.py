@@ -68,3 +68,14 @@ class TournamentViewSet(viewsets.ModelViewSet):
             context=self.get_serializer_context(),
         )
         return Response(output.data)
+
+    def destroy(self, request, *args, **kwargs):
+        tournament = self.get_object()
+        if TournamentService.can_hard_delete(tournament=tournament):
+            return super().destroy(request, *args, **kwargs)
+        tournament = TournamentService.deactivate_tournament(tournament=tournament)
+        output = TournamentDetailSerializer(
+            tournament,
+            context=self.get_serializer_context(),
+        )
+        return Response(output.data)

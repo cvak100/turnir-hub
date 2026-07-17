@@ -24,17 +24,17 @@ class MatchViewSet(viewsets.ModelViewSet):
             {
                 "list": "match.view",
                 "retrieve": "match.view",
-                "create": "match.edit",
-                "update": "match.edit",
+                "create": "match.manage",
+                "update": "match.manage",
                 "partial_update": "match.result.edit",
-                "destroy": "match.edit",
+                "destroy": "match.manage",
             },
             default="match.view",
         )
         return super().get_permissions()
 
     def get_queryset(self):
-        return Match.objects.select_related(
+        qs = Match.objects.select_related(
             "tournament_phase",
             "tournament_phase__tournament_edition",
             "tournament_phase_group",
@@ -43,6 +43,16 @@ class MatchViewSet(viewsets.ModelViewSet):
             "status",
             "referee",
         ).all()
+        phase = self.request.query_params.get("tournament_phase")
+        if phase:
+            qs = qs.filter(tournament_phase_id=phase)
+        group = self.request.query_params.get("tournament_phase_group")
+        if group:
+            qs = qs.filter(tournament_phase_group_id=group)
+        edition = self.request.query_params.get("tournament_edition")
+        if edition:
+            qs = qs.filter(tournament_phase__tournament_edition_id=edition)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":

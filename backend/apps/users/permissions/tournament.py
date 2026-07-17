@@ -94,4 +94,16 @@ class HasTournamentPermission(BasePermission):
             except Match.DoesNotExist:
                 return None
 
+        participation_id = data.get("team_participation")
+        if participation_id:
+            from apps.players.models import TeamParticipation
+
+            try:
+                participation = TeamParticipation.objects.select_related(
+                    "tournament_edition",
+                ).get(pk=participation_id)
+                return participation.tournament_edition
+            except TeamParticipation.DoesNotExist:
+                return None
+
         return None

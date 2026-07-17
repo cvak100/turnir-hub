@@ -14,13 +14,17 @@ PERMISSIONS = [
     ("edition.delete", "Delete editions"),
     ("match.view", "View matches"),
     ("match.edit", "Edit matches"),
+    ("match.manage", "Manage matches (preparation)"),
     ("match.result.edit", "Edit match results"),
     ("match.event.add", "Add match events"),
     ("match.event.edit", "Edit match events"),
     ("team.view", "View teams"),
     ("team.manage", "Manage teams"),
+    ("team.participation.manage", "Register teams into editions"),
     ("player.view", "View players"),
     ("player.manage", "Manage players"),
+    ("player.assign", "Assign players to team participations"),
+    ("phase.manage", "Manage phases and groups"),
     ("admin.full_access", "Full admin access"),
 ]
 
@@ -37,30 +41,38 @@ ROLE_PERMISSIONS = {
         "edition.delete",
         "match.view",
         "match.edit",
+        "match.manage",
         "match.result.edit",
         "match.event.add",
         "match.event.edit",
         "team.view",
         "team.manage",
+        "team.participation.manage",
         "player.view",
         "player.manage",
+        "player.assign",
+        "phase.manage",
     ],
     "editor": [
         "edition.view",
         "match.view",
         "match.edit",
+        "match.manage",
         "match.result.edit",
         "match.event.add",
         "match.event.edit",
         "team.view",
         "player.view",
+        "phase.manage",
     ],
     "team_manager": [
         "edition.view",
         "team.view",
         "team.manage",
+        "team.participation.manage",
         "player.view",
         "player.manage",
+        "player.assign",
         "match.view",
     ],
     "viewer": [
@@ -82,7 +94,7 @@ ROLES = [
 
 
 class Command(BaseCommand):
-    help = "Seed initial Permission and Role data for Phase 4"
+    help = "Seed initial Permission and Role data for Phase 4/5"
 
     def handle(self, *args, **options):
         permission_map = {}

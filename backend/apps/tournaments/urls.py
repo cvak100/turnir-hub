@@ -12,6 +12,9 @@ router = DefaultRouter()
 router.register(r"tournaments", TournamentViewSet, basename="tournament")
 router.register(r"editions", TournamentEditionViewSet, basename="edition")
 router.register(r"phases", TournamentPhaseViewSet, basename="phase")
+router.register(r"groups", TournamentPhaseGroupViewSet, basename="group")
+router.register(r"group-teams", TournamentPhaseGroupTeamViewSet, basename="group-team")
+# Backward-compatible aliases
 router.register(r"phase-groups", TournamentPhaseGroupViewSet, basename="phase-group")
 router.register(
     r"phase-group-teams",

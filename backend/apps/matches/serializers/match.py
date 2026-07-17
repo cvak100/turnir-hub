@@ -95,6 +95,11 @@ class MatchDetailSerializer(serializers.ModelSerializer):
 
 
 class MatchCreateUpdateSerializer(serializers.ModelSerializer):
+    status = serializers.PrimaryKeyRelatedField(
+        queryset=MatchStatus.objects.all(),
+        required=False,
+    )
+
     class Meta:
         model = Match
         fields = [

@@ -31,13 +31,17 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def get_queryset(self):
-        return TournamentEdition.objects.select_related(
+        qs = TournamentEdition.objects.select_related(
             "tournament",
             "tournament__sport",
             "status",
             "contact_person",
             "global_rule_template",
         ).all()
+        tournament = self.request.query_params.get("tournament")
+        if tournament:
+            qs = qs.filter(tournament_id=tournament)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
