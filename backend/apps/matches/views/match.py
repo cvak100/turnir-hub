@@ -1,6 +1,8 @@
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.utils import scope_queryset_to_editions
 from apps.matches.models import Match, MatchEvent
 from apps.matches.serializers.match import (
     MatchCreateUpdateSerializer,
@@ -19,18 +21,17 @@ class MatchViewSet(viewsets.ModelViewSet):
     permission_classes = [HasMatchPermission]
 
     def get_permissions(self):
-        set_action_permission(
-            self,
-            {
-                "list": "match.view",
-                "retrieve": "match.view",
-                "create": "match.manage",
-                "update": "match.manage",
-                "partial_update": "match.result.edit",
-                "destroy": "match.manage",
-            },
-            default="match.view",
-        )
+        mapping = {
+            "list": "match.view",
+            "retrieve": "match.view",
+            "create": "match.manage",
+            "update": "match.manage",
+            "partial_update": "match.result.edit",
+            "destroy": "match.manage",
+            "start": "match.live.manage",
+            "finish": "match.finish",
+        }
+        set_action_permission(self, mapping, default="match.view")
         return super().get_permissions()
 
     def get_queryset(self):
@@ -52,8 +53,6 @@ class MatchViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(tournament_phase__tournament_edition_id=edition)
-        from apps.core.utils import scope_queryset_to_editions
-
         return scope_queryset_to_editions(
             self.request.user,
             qs,
@@ -86,6 +85,16 @@ class MatchViewSet(viewsets.ModelViewSet):
         output = MatchDetailSerializer(match, context=self.get_serializer_context())
         return Response(output.data)
 
+    @action(detail=True, methods=["post"])
+    def start(self, request, pk=None):
+        match = MatchEventService.start_match(match=self.get_object())
+        return Response(MatchDetailSerializer(match).data)
+
+    @action(detail=True, methods=["post"])
+    def finish(self, request, pk=None):
+        match = MatchEventService.finish_match(match=self.get_object())
+        return Response(MatchDetailSerializer(match).data)
+
 
 class MatchEventViewSet(viewsets.ModelViewSet):
     permission_classes = [HasMatchPermission]
@@ -99,14 +108,14 @@ class MatchEventViewSet(viewsets.ModelViewSet):
                 "create": "match.event.add",
                 "update": "match.event.edit",
                 "partial_update": "match.event.edit",
-                "destroy": "match.event.edit",
+                "destroy": "match.event.delete",
             },
             default="match.view",
         )
         return super().get_permissions()
 
     def get_queryset(self):
-        return MatchEvent.objects.select_related(
+        qs = MatchEvent.objects.select_related(
             "match",
             "match__tournament_phase__tournament_edition",
             "event_type",
@@ -116,6 +125,14 @@ class MatchEventViewSet(viewsets.ModelViewSet):
             "related_player",
             "created_by",
         ).all()
+        match_id = self.request.query_params.get("match")
+        if match_id:
+            qs = qs.filter(match_id=match_id)
+        return scope_queryset_to_editions(
+            self.request.user,
+            qs,
+            "match__tournament_phase__tournament_edition_id",
+        )
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -151,3 +168,8 @@ class MatchEventViewSet(viewsets.ModelViewSet):
             context=self.get_serializer_context(),
         )
         return Response(output.data)
+
+    def destroy(self, request, *args, **kwargs):
+        event = self.get_object()
+        MatchEventService.delete_event(event=event)
+        return Response(status=status.HTTP_204_NO_CONTENT)

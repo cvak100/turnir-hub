@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.matches.models import EventType, Match, MatchEvent, MatchStatus
+from apps.players.models import Player
 from apps.users.serializers import PersonMinimalSerializer
 
 
@@ -142,6 +143,8 @@ class MatchEventListSerializer(serializers.ModelSerializer):
             "half",
             "team_participation",
             "player",
+            "is_temporary_player",
+            "temporary_player_label",
             "is_penalty",
             "is_own_goal",
         ]
@@ -171,6 +174,8 @@ class MatchEventDetailSerializer(serializers.ModelSerializer):
             "description",
             "score_home_at_event",
             "score_away_at_event",
+            "is_temporary_player",
+            "temporary_player_label",
             "created_by",
             "created_at",
             "updated_at",
@@ -178,6 +183,12 @@ class MatchEventDetailSerializer(serializers.ModelSerializer):
 
 
 class MatchEventCreateUpdateSerializer(serializers.ModelSerializer):
+    player = serializers.PrimaryKeyRelatedField(
+        queryset=Player.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = MatchEvent
         fields = [
@@ -198,4 +209,6 @@ class MatchEventCreateUpdateSerializer(serializers.ModelSerializer):
             "description",
             "score_home_at_event",
             "score_away_at_event",
+            "is_temporary_player",
+            "temporary_player_label",
         ]

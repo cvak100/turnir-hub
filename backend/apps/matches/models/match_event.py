@@ -47,6 +47,8 @@ class MatchEvent(models.Model):
     description = models.TextField(blank=True)
     score_home_at_event = models.PositiveIntegerField(null=True, blank=True)
     score_away_at_event = models.PositiveIntegerField(null=True, blank=True)
+    is_temporary_player = models.BooleanField(default=False)
+    temporary_player_label = models.CharField(max_length=100, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
