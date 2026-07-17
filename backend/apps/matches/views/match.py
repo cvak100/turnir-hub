@@ -1,5 +1,4 @@
 from rest_framework import status, viewsets
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.matches.models import Match, MatchEvent
@@ -12,14 +11,32 @@ from apps.matches.serializers.match import (
     MatchListSerializer,
 )
 from apps.matches.services.match import MatchEventService, MatchService
+from apps.users.permissions import HasMatchPermission
+from apps.users.permissions.utils import set_action_permission
 
 
 class MatchViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasMatchPermission]
+
+    def get_permissions(self):
+        set_action_permission(
+            self,
+            {
+                "list": "match.view",
+                "retrieve": "match.view",
+                "create": "match.edit",
+                "update": "match.edit",
+                "partial_update": "match.result.edit",
+                "destroy": "match.edit",
+            },
+            default="match.view",
+        )
+        return super().get_permissions()
 
     def get_queryset(self):
         return Match.objects.select_related(
             "tournament_phase",
+            "tournament_phase__tournament_edition",
             "tournament_phase_group",
             "home_team_participation",
             "away_team_participation",
@@ -55,11 +72,27 @@ class MatchViewSet(viewsets.ModelViewSet):
 
 
 class MatchEventViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasMatchPermission]
+
+    def get_permissions(self):
+        set_action_permission(
+            self,
+            {
+                "list": "match.view",
+                "retrieve": "match.view",
+                "create": "match.event.add",
+                "update": "match.event.edit",
+                "partial_update": "match.event.edit",
+                "destroy": "match.event.edit",
+            },
+            default="match.view",
+        )
+        return super().get_permissions()
 
     def get_queryset(self):
         return MatchEvent.objects.select_related(
             "match",
+            "match__tournament_phase__tournament_edition",
             "event_type",
             "team_participation",
             "player",

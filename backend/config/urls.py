@@ -6,6 +6,8 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
+from apps.users.views.auth import MeView, MyPermissionsView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/", include("apps.tournaments.urls")),
@@ -23,5 +25,11 @@ urlpatterns = [
         "api/v1/auth/token/verify/",
         TokenVerifyView.as_view(),
         name="token_verify",
+    ),
+    path("api/v1/auth/me/", MeView.as_view(), name="auth-me"),
+    path(
+        "api/v1/auth/my-permissions/",
+        MyPermissionsView.as_view(),
+        name="auth-my-permissions",
     ),
 ]

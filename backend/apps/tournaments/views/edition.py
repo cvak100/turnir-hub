@@ -1,5 +1,4 @@
 from rest_framework import status, viewsets
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.tournaments.models import TournamentEdition
@@ -9,10 +8,27 @@ from apps.tournaments.serializers.edition import (
     TournamentEditionListSerializer,
 )
 from apps.tournaments.services.edition import TournamentEditionService
+from apps.users.permissions import HasTournamentPermission
+from apps.users.permissions.utils import set_action_permission
 
 
 class TournamentEditionViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasTournamentPermission]
+
+    def get_permissions(self):
+        set_action_permission(
+            self,
+            {
+                "list": "edition.view",
+                "retrieve": "edition.view",
+                "create": "edition.create",
+                "update": "edition.edit",
+                "partial_update": "edition.edit",
+                "destroy": "edition.manage",
+            },
+            default="edition.view",
+        )
+        return super().get_permissions()
 
     def get_queryset(self):
         return TournamentEdition.objects.select_related(

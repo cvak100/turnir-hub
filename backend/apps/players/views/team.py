@@ -1,5 +1,4 @@
 from rest_framework import status, viewsets
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.players.models import Team
@@ -9,11 +8,28 @@ from apps.players.serializers.team import (
     TeamListSerializer,
 )
 from apps.players.services.team import TeamService
+from apps.users.permissions import HasPermission
+from apps.users.permissions.utils import set_action_permission
 
 
 class TeamViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasPermission]
     queryset = Team.objects.select_related("status", "contact_person").all()
+
+    def get_permissions(self):
+        set_action_permission(
+            self,
+            {
+                "list": "team.view",
+                "retrieve": "team.view",
+                "create": "team.manage",
+                "update": "team.manage",
+                "partial_update": "team.manage",
+                "destroy": "team.manage",
+            },
+            default="team.view",
+        )
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == "list":
