@@ -1,4 +1,5 @@
 from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.utils import scope_queryset_to_editions
@@ -14,22 +15,25 @@ from apps.users.permissions.utils import set_action_permission
 
 
 class TournamentEditionViewSet(viewsets.ModelViewSet):
-    permission_classes = [HasTournamentPermission]
+    filterset_fields = ["tournament", "status", "year", "is_public"]
+    search_fields = ["name", "location"]
+    ordering_fields = ["year", "start_date", "name"]
+    ordering = ["-year", "name"]
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         set_action_permission(
             self,
             {
-                "list": "edition.view",
-                "retrieve": "edition.view",
                 "create": "edition.create",
                 "update": "edition.edit",
                 "partial_update": "edition.edit",
                 "destroy": "edition.manage",
             },
-            default="edition.view",
+            default="edition.edit",
         )
-        return super().get_permissions()
+        return [HasTournamentPermission()]
 
     def get_queryset(self):
         qs = TournamentEdition.objects.select_related(
@@ -42,6 +46,8 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
         tournament = self.request.query_params.get("tournament")
         if tournament:
             qs = qs.filter(tournament_id=tournament)
+        if not self.request.user.is_authenticated:
+            return qs.filter(is_public=True)
         return scope_queryset_to_editions(self.request.user, qs, "id")
 
     def get_serializer_class(self):

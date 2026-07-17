@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
+from apps.core.exceptions import ConflictError, InvalidStateError
 from apps.tournaments.models import TournamentPhaseGroup, TournamentPhaseGroupTeam
 
 
@@ -14,8 +15,9 @@ class TournamentPhaseGroupService:
         if exclude_id:
             qs = qs.exclude(pk=exclude_id)
         if qs.exists():
-            raise ValidationError(
-                {"name": "Group name must be unique within a phase."}
+            raise ConflictError(
+                "Group name must be unique within a phase.",
+                details={"name": ["Group name must be unique within a phase."]},
             )
 
     @staticmethod
@@ -49,14 +51,19 @@ class TournamentPhaseGroupService:
     @staticmethod
     def validate_can_delete(*, group: TournamentPhaseGroup):
         if group.group_teams.exists():
-            raise ValidationError("Cannot delete a group that still has teams.")
+            raise InvalidStateError("Cannot delete a group that still has teams.")
         if group.matches.exists():
-            raise ValidationError("Cannot delete a group that has matches.")
+            raise InvalidStateError("Cannot delete a group that has matches.")
 
 
 class TournamentPhaseGroupTeamService:
     @staticmethod
-    def _validate_assignment(*, tournament_phase_group, team_participation, exclude_id=None):
+    def _validate_assignment(
+        *,
+        tournament_phase_group,
+        team_participation,
+        exclude_id=None,
+    ):
         phase = tournament_phase_group.tournament_phase
         edition = phase.tournament_edition
 
@@ -75,8 +82,9 @@ class TournamentPhaseGroupTeamService:
             >= tournament_phase_group.max_teams
             and exclude_id is None
         ):
-            raise ValidationError(
-                {"tournament_phase_group": "Group has reached max_teams."}
+            raise ConflictError(
+                "Group has reached max_teams.",
+                details={"tournament_phase_group": ["Group has reached max_teams."]},
             )
 
         qs = TournamentPhaseGroupTeam.objects.filter(
@@ -86,12 +94,13 @@ class TournamentPhaseGroupTeamService:
         if exclude_id:
             qs = qs.exclude(pk=exclude_id)
         if qs.exists():
-            raise ValidationError(
-                {
-                    "team_participation": (
+            raise ConflictError(
+                "Team cannot be placed into two groups of the same phase.",
+                details={
+                    "team_participation": [
                         "Team cannot be placed into two groups of the same phase."
-                    )
-                }
+                    ]
+                },
             )
 
     @staticmethod

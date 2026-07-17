@@ -1,4 +1,5 @@
 from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.tournaments.models import Tournament
@@ -14,22 +15,25 @@ from apps.users.permissions.utils import set_action_permission
 
 class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.select_related("sport", "contact_person").all()
-    permission_classes = [HasPermission]
+    filterset_fields = ["sport", "is_active"]
+    search_fields = ["name"]
+    ordering_fields = ["name", "created_at"]
+    ordering = ["name"]
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         set_action_permission(
             self,
             {
-                "list": "tournament.view",
-                "retrieve": "tournament.view",
                 "create": "tournament.create",
                 "update": "tournament.edit",
                 "partial_update": "tournament.edit",
                 "destroy": "tournament.delete",
             },
-            default="tournament.view",
+            default="tournament.edit",
         )
-        return super().get_permissions()
+        return [HasPermission()]
 
     def get_serializer_class(self):
         if self.action == "list":

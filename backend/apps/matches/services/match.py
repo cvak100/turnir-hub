@@ -1,12 +1,16 @@
+import logging
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
-from apps.matches.models import EventType, Match, MatchEvent, MatchStatus
+from apps.core.exceptions import InvalidStateError
+from apps.matches.models import Match, MatchEvent, MatchStatus
 from apps.players.models import TeamParticipationPlayer
 from apps.tournaments.models import TournamentPhaseGroupTeam
 
+live_logger = logging.getLogger("turnir.matches.live")
 
 GOAL_EVENT_CODES = {"goal", "penalty_scored"}
 OWN_GOAL_CODE = "own_goal"
@@ -20,16 +24,16 @@ class MatchEventService:
     def _get_status(code: str) -> MatchStatus:
         status = MatchStatus.objects.filter(code=code).first()
         if status is None:
-            raise ValidationError(f"MatchStatus '{code}' is not configured.")
+            raise InvalidStateError(f"MatchStatus '{code}' is not configured.")
         return status
 
     @staticmethod
     def _validate_live_editable(match: Match, *, require_live: bool = True):
         code = match.status.code if match.status_id else None
         if require_live and code != "live":
-            raise ValidationError("Match must be live for event entry.")
+            raise InvalidStateError("Match must be live for event entry.")
         if code == "finished":
-            raise ValidationError(
+            raise InvalidStateError(
                 "Cannot modify events on a finished match without unlock."
             )
 
@@ -277,6 +281,15 @@ class MatchEventService:
         MatchEventService.recalculate_match_score(match)
         MatchEventService.recalculate_player_stats(match=match)
         match.refresh_from_db()
+        live_logger.info(
+            "match_event_created request_user=%s match_id=%s event_id=%s event_type=%s minute=%s temporary=%s",
+            getattr(user, "id", None),
+            match.id,
+            event.id,
+            event.event_type.code,
+            event.minute,
+            event.is_temporary_player,
+        )
         MatchEventService.broadcast_match_update(match=match, event=event)
         return event
 
@@ -285,6 +298,7 @@ class MatchEventService:
     def update_event(*, event: MatchEvent, data: dict) -> MatchEvent:
         match = event.match
         MatchEventService._validate_live_editable(match, require_live=True)
+        old_player_id = event.player_id
         merged = {
             "team_participation": data.get(
                 "team_participation",
@@ -305,14 +319,19 @@ class MatchEventService:
 
         for attr, value in data.items():
             setattr(event, attr, value)
-        if event.player_id and event.is_temporary_player is False:
-            # Keep label optional after correction
-            pass
         event.save()
 
         MatchEventService.recalculate_match_score(match)
         MatchEventService.recalculate_player_stats(match=match)
         match.refresh_from_db()
+        live_logger.info(
+            "match_event_updated match_id=%s event_id=%s old_player_id=%s new_player_id=%s temporary=%s",
+            match.id,
+            event.id,
+            old_player_id,
+            event.player_id,
+            event.is_temporary_player,
+        )
         MatchEventService.broadcast_match_update(match=match, event=event)
         return event
 
@@ -321,28 +340,49 @@ class MatchEventService:
     def delete_event(*, event: MatchEvent):
         match = event.match
         MatchEventService._validate_live_editable(match, require_live=True)
+        event_id = event.id
         event.delete()
         MatchEventService.recalculate_match_score(match)
         MatchEventService.recalculate_player_stats(match=match)
         match.refresh_from_db()
+        live_logger.info(
+            "match_event_deleted match_id=%s event_id=%s",
+            match.id,
+            event_id,
+        )
         MatchEventService.broadcast_match_update(match=match, event=None)
 
     @staticmethod
     @transaction.atomic
     def start_match(*, match: Match) -> Match:
+        code = match.status.code if match.status_id else None
+        if code == "finished":
+            raise InvalidStateError("Cannot start a finished match.")
+        if code == "live":
+            raise InvalidStateError("Match is already live.")
         match.status = MatchEventService._get_status("live")
         match.save(update_fields=["status", "updated_at"])
+        live_logger.info("match_started match_id=%s", match.id)
         MatchEventService.broadcast_match_update(match=match)
         return match
 
     @staticmethod
     @transaction.atomic
     def finish_match(*, match: Match) -> Match:
+        code = match.status.code if match.status_id else None
+        if code == "finished":
+            raise InvalidStateError("Match is already finished.")
         MatchEventService.recalculate_match_score(match)
         MatchEventService.recalculate_player_stats(match=match)
         match.status = MatchEventService._get_status("finished")
         match.save(update_fields=["status", "updated_at"])
         MatchEventService.recalculate_group_standings(match=match)
+        live_logger.info(
+            "match_finished match_id=%s score=%s:%s",
+            match.id,
+            match.home_score,
+            match.away_score,
+        )
         MatchEventService.broadcast_match_update(match=match)
         return match
 
@@ -423,7 +463,7 @@ class MatchService:
         if not payload.get("status"):
             default_status = MatchService._default_status()
             if default_status is None:
-                raise ValidationError({"status": "No MatchStatus available."})
+                raise InvalidStateError("No MatchStatus available.")
             payload["status"] = default_status
         return Match.objects.create(**payload)
 

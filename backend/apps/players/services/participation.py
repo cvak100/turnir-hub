@@ -2,6 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
+from apps.core.exceptions import ConflictError, InvalidStateError
 from apps.players.models import TeamParticipation
 from apps.players.models.team_status import TeamStatus
 
@@ -28,9 +29,7 @@ class TeamParticipationService:
             team=team,
             tournament_edition=tournament_edition,
         ).exists():
-            raise ValidationError(
-                "Team is already registered in this edition."
-            )
+            raise ConflictError("Team is already registered in this edition.")
 
         payload = dict(data)
         participation_name = payload.get("participation_name") or team.name
@@ -43,7 +42,7 @@ class TeamParticipationService:
         if not payload.get("status"):
             default_status = TeamParticipationService._default_status()
             if default_status is None:
-                raise ValidationError({"status": "No TeamStatus available."})
+                raise InvalidStateError("No TeamStatus available.")
             payload["status"] = default_status
 
         if not payload.get("registered_at"):
@@ -70,9 +69,7 @@ class TeamParticipationService:
             tournament_edition=edition,
         ).exclude(pk=participation.pk)
         if conflict.exists():
-            raise ValidationError(
-                "Team is already registered in this edition."
-            )
+            raise ConflictError("Team is already registered in this edition.")
 
         for attr, value in data.items():
             setattr(participation, attr, value)

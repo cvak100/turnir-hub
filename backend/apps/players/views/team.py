@@ -15,6 +15,10 @@ from apps.users.permissions.utils import set_action_permission
 class TeamViewSet(viewsets.ModelViewSet):
     permission_classes = [HasPermission]
     queryset = Team.objects.select_related("status", "contact_person").all()
+    filterset_fields = ["status", "city"]
+    search_fields = ["name", "short_name", "city"]
+    ordering_fields = ["name", "created_at"]
+    ordering = ["name"]
 
     def get_permissions(self):
         set_action_permission(

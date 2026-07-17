@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.core.validators import validate_image_file
 from apps.tournaments.models import TournamentEdition, TournamentStatus
 from apps.tournaments.serializers.tournament import TournamentListSerializer
 from apps.users.serializers import PersonMinimalSerializer
@@ -63,6 +64,12 @@ class TournamentEditionDetailSerializer(serializers.ModelSerializer):
 
 
 class TournamentEditionCreateSerializer(serializers.ModelSerializer):
+    cover_image = serializers.ImageField(
+        required=False,
+        allow_null=True,
+        validators=[validate_image_file],
+    )
+
     class Meta:
         model = TournamentEdition
         fields = [

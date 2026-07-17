@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
+from apps.core.exceptions import ConflictError
 from apps.players.models import TeamParticipationPlayer
 
 
@@ -23,7 +24,7 @@ class TeamParticipationPlayerService:
         if exclude_id:
             already_assigned = already_assigned.exclude(pk=exclude_id)
         if already_assigned.exists():
-            raise ValidationError(
+            raise ConflictError(
                 "Player is already assigned to a team in this edition."
             )
 
@@ -40,12 +41,13 @@ class TeamParticipationPlayerService:
             if exclude_id:
                 jersey_qs = jersey_qs.exclude(pk=exclude_id)
             if jersey_qs.exists():
-                raise ValidationError(
-                    {
-                        "jersey_number": (
+                raise ConflictError(
+                    "Jersey number must be unique inside one team participation.",
+                    details={
+                        "jersey_number": [
                             "Jersey number must be unique inside one team participation."
-                        )
-                    }
+                        ]
+                    },
                 )
 
         if is_captain:
@@ -56,8 +58,13 @@ class TeamParticipationPlayerService:
             if exclude_id:
                 captain_qs = captain_qs.exclude(pk=exclude_id)
             if captain_qs.exists():
-                raise ValidationError(
-                    {"is_captain": "Only one captain is allowed per team participation."}
+                raise ConflictError(
+                    "Only one captain is allowed per team participation.",
+                    details={
+                        "is_captain": [
+                            "Only one captain is allowed per team participation."
+                        ]
+                    },
                 )
 
     @staticmethod

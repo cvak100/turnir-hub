@@ -15,6 +15,14 @@ from apps.users.permissions.utils import set_action_permission
 class PlayerViewSet(viewsets.ModelViewSet):
     permission_classes = [HasPermission]
     queryset = Player.objects.select_related("person", "status").all()
+    filterset_fields = ["status", "position", "is_active", "dominant_foot"]
+    search_fields = [
+        "person__first_name",
+        "person__last_name",
+        "nationality",
+    ]
+    ordering_fields = ["created_at", "preferred_jersey_number"]
+    ordering = ["-created_at"]
 
     def get_permissions(self):
         set_action_permission(

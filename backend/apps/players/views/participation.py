@@ -14,6 +14,10 @@ from apps.users.permissions.utils import set_action_permission
 
 class TeamParticipationViewSet(viewsets.ModelViewSet):
     permission_classes = [HasTournamentPermission]
+    filterset_fields = ["tournament_edition", "team", "status"]
+    search_fields = ["participation_name", "team__name"]
+    ordering_fields = ["participation_name", "registered_at", "created_at"]
+    ordering = ["participation_name"]
 
     def get_permissions(self):
         set_action_permission(

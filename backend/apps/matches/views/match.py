@@ -1,5 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.utils import scope_queryset_to_editions
@@ -18,12 +19,18 @@ from apps.users.permissions.utils import set_action_permission
 
 
 class MatchViewSet(viewsets.ModelViewSet):
-    permission_classes = [HasMatchPermission]
+    filterset_fields = ["tournament_phase", "tournament_phase_group", "status"]
+    search_fields = [
+        "home_team_participation__participation_name",
+        "away_team_participation__participation_name",
+    ]
+    ordering_fields = ["match_date", "match_number", "created_at"]
+    ordering = ["match_date", "match_number"]
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         mapping = {
-            "list": "match.view",
-            "retrieve": "match.view",
             "create": "match.manage",
             "update": "match.manage",
             "partial_update": "match.result.edit",
@@ -31,8 +38,8 @@ class MatchViewSet(viewsets.ModelViewSet):
             "start": "match.live.manage",
             "finish": "match.finish",
         }
-        set_action_permission(self, mapping, default="match.view")
-        return super().get_permissions()
+        set_action_permission(self, mapping, default="match.manage")
+        return [HasMatchPermission()]
 
     def get_queryset(self):
         qs = Match.objects.select_related(
@@ -53,6 +60,8 @@ class MatchViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(tournament_phase__tournament_edition_id=edition)
+        if not self.request.user.is_authenticated:
+            return qs.filter(tournament_phase__tournament_edition__is_public=True)
         return scope_queryset_to_editions(
             self.request.user,
             qs,
@@ -97,22 +106,29 @@ class MatchViewSet(viewsets.ModelViewSet):
 
 
 class MatchEventViewSet(viewsets.ModelViewSet):
-    permission_classes = [HasMatchPermission]
+    filterset_fields = ["match", "event_type", "team_participation"]
+    search_fields = [
+        "temporary_player_label",
+        "player__person__first_name",
+        "player__person__last_name",
+    ]
+    ordering_fields = ["minute", "created_at", "id"]
+    ordering = ["minute", "id"]
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         set_action_permission(
             self,
             {
-                "list": "match.view",
-                "retrieve": "match.view",
                 "create": "match.event.add",
                 "update": "match.event.edit",
                 "partial_update": "match.event.edit",
                 "destroy": "match.event.delete",
             },
-            default="match.view",
+            default="match.event.add",
         )
-        return super().get_permissions()
+        return [HasMatchPermission()]
 
     def get_queryset(self):
         qs = MatchEvent.objects.select_related(
@@ -128,6 +144,10 @@ class MatchEventViewSet(viewsets.ModelViewSet):
         match_id = self.request.query_params.get("match")
         if match_id:
             qs = qs.filter(match_id=match_id)
+        if not self.request.user.is_authenticated:
+            return qs.filter(
+                match__tournament_phase__tournament_edition__is_public=True
+            )
         return scope_queryset_to_editions(
             self.request.user,
             qs,

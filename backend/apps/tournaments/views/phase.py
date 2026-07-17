@@ -28,6 +28,10 @@ from apps.users.permissions.utils import set_action_permission
 
 class TournamentPhaseViewSet(viewsets.ModelViewSet):
     permission_classes = [HasTournamentPermission]
+    filterset_fields = ["tournament_edition", "phase_type", "status"]
+    search_fields = ["name"]
+    ordering_fields = ["order", "name", "created_at"]
+    ordering = ["order"]
 
     def get_permissions(self):
         set_action_permission(
@@ -100,6 +104,10 @@ class TournamentPhaseViewSet(viewsets.ModelViewSet):
 
 class TournamentPhaseGroupViewSet(viewsets.ModelViewSet):
     permission_classes = [HasTournamentPermission]
+    filterset_fields = ["tournament_phase"]
+    search_fields = ["name"]
+    ordering_fields = ["name", "created_at"]
+    ordering = ["name"]
 
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
@@ -166,6 +174,9 @@ class TournamentPhaseGroupViewSet(viewsets.ModelViewSet):
 
 class TournamentPhaseGroupTeamViewSet(viewsets.ModelViewSet):
     permission_classes = [HasTournamentPermission]
+    filterset_fields = ["tournament_phase_group", "team_participation"]
+    ordering_fields = ["points", "goals_for", "played"]
+    ordering = ["-points", "-goals_for"]
 
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:

@@ -1,7 +1,11 @@
+import logging
+
 from rest_framework.permissions import BasePermission
 
 from apps.tournaments.models import TournamentEdition, TournamentPhase
 from apps.users.services.permissions import PermissionService
+
+logger = logging.getLogger("turnir.permissions")
 
 
 class HasTournamentPermission(BasePermission):
@@ -11,6 +15,18 @@ class HasTournamentPermission(BasePermission):
     """
 
     message = "You do not have permission to perform this action."
+
+    def _deny(self, request, permission_code, tournament_edition=None):
+        logger.warning(
+            "permission_denied request_id=%s user_id=%s permission=%s "
+            "tournament_edition_id=%s path=%s",
+            getattr(request, "request_id", None),
+            getattr(getattr(request, "user", None), "id", None),
+            permission_code,
+            getattr(tournament_edition, "id", tournament_edition),
+            getattr(request, "path", None),
+        )
+        return False
 
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
@@ -23,23 +39,26 @@ class HasTournamentPermission(BasePermission):
         if view.action == "list":
             edition = self._edition_from_request(request, view)
             if edition is not None:
-                return PermissionService.user_has_permission(
+                allowed = PermissionService.user_has_permission(
                     user=request.user,
                     permission_code=permission_code,
                     tournament_edition=edition,
                 )
-            return PermissionService.user_has_permission_anywhere(
+                return allowed or self._deny(request, permission_code, edition)
+            allowed = PermissionService.user_has_permission_anywhere(
                 user=request.user,
                 permission_code=permission_code,
             )
+            return allowed or self._deny(request, permission_code)
 
         if view.action == "create":
             edition = self._edition_from_request(request, view)
-            return PermissionService.user_has_permission(
+            allowed = PermissionService.user_has_permission(
                 user=request.user,
                 permission_code=permission_code,
                 tournament_edition=edition,
             )
+            return allowed or self._deny(request, permission_code, edition)
 
         # retrieve/update/destroy: object check in has_object_permission
         return True
@@ -50,11 +69,12 @@ class HasTournamentPermission(BasePermission):
             return False
 
         tournament_edition = PermissionService.resolve_tournament_edition(obj)
-        return PermissionService.user_has_permission(
+        allowed = PermissionService.user_has_permission(
             user=request.user,
             permission_code=permission_code,
             tournament_edition=tournament_edition,
         )
+        return allowed or self._deny(request, permission_code, tournament_edition)
 
     @staticmethod
     def _edition_from_request(request, view):

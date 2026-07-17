@@ -1,6 +1,10 @@
+import logging
+
 from rest_framework.permissions import BasePermission
 
 from apps.users.services.permissions import PermissionService
+
+logger = logging.getLogger("turnir.permissions")
 
 
 class HasPermission(BasePermission):
@@ -18,7 +22,16 @@ class HasPermission(BasePermission):
         if permission_code is None:
             return False
 
-        return PermissionService.user_has_permission_anywhere(
+        allowed = PermissionService.user_has_permission_anywhere(
             user=request.user,
             permission_code=permission_code,
         )
+        if not allowed:
+            logger.warning(
+                "permission_denied request_id=%s user_id=%s permission=%s path=%s",
+                getattr(request, "request_id", None),
+                getattr(request.user, "id", None),
+                permission_code,
+                getattr(request, "path", None),
+            )
+        return allowed

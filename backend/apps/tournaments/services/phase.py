@@ -1,6 +1,6 @@
 from django.db import transaction
-from rest_framework.exceptions import ValidationError
 
+from apps.core.exceptions import ConflictError, InvalidStateError
 from apps.tournaments.models import TournamentPhase
 
 
@@ -14,8 +14,9 @@ class TournamentPhaseService:
         if exclude_id:
             qs = qs.exclude(pk=exclude_id)
         if qs.exists():
-            raise ValidationError(
-                {"order": "Phase order must be unique within an edition."}
+            raise ConflictError(
+                "Phase order must be unique within an edition.",
+                details={"order": ["Phase order must be unique within an edition."]},
             )
 
     @staticmethod
@@ -45,6 +46,6 @@ class TournamentPhaseService:
     @staticmethod
     def validate_can_delete(*, phase: TournamentPhase):
         if phase.matches.exists():
-            raise ValidationError(
+            raise InvalidStateError(
                 "Cannot delete a phase that already has matches."
             )

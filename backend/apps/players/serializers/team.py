@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.core.validators import validate_image_file
 from apps.players.models import Team, TeamStatus
 from apps.users.serializers import PersonMinimalSerializer
 
@@ -43,6 +44,12 @@ class TeamDetailSerializer(serializers.ModelSerializer):
 
 
 class TeamCreateUpdateSerializer(serializers.ModelSerializer):
+    logo = serializers.ImageField(
+        required=False,
+        allow_null=True,
+        validators=[validate_image_file],
+    )
+
     class Meta:
         model = Team
         fields = [
