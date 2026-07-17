@@ -18,7 +18,7 @@ class HasPermission(BasePermission):
         if permission_code is None:
             return False
 
-        return PermissionService.user_has_permission(
+        return PermissionService.user_has_permission_anywhere(
             user=request.user,
             permission_code=permission_code,
         )

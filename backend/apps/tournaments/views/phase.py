@@ -52,7 +52,13 @@ class TournamentPhaseViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(tournament_edition_id=edition)
-        return qs
+        from apps.core.utils import scope_queryset_to_editions
+
+        return scope_queryset_to_editions(
+            self.request.user,
+            qs,
+            "tournament_edition_id",
+        )
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -110,7 +116,13 @@ class TournamentPhaseGroupViewSet(viewsets.ModelViewSet):
         phase = self.request.query_params.get("tournament_phase")
         if phase:
             qs = qs.filter(tournament_phase_id=phase)
-        return qs
+        from apps.core.utils import scope_queryset_to_editions
+
+        return scope_queryset_to_editions(
+            self.request.user,
+            qs,
+            "tournament_phase__tournament_edition_id",
+        )
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -171,7 +183,13 @@ class TournamentPhaseGroupTeamViewSet(viewsets.ModelViewSet):
         group = self.request.query_params.get("tournament_phase_group")
         if group:
             qs = qs.filter(tournament_phase_group_id=group)
-        return qs
+        from apps.core.utils import scope_queryset_to_editions
+
+        return scope_queryset_to_editions(
+            self.request.user,
+            qs,
+            "tournament_phase_group__tournament_phase__tournament_edition_id",
+        )
 
     def get_serializer_class(self):
         if self.action == "list":

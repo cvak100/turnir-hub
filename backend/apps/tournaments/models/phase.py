@@ -26,6 +26,7 @@ class TournamentPhase(models.Model):
 
     class Meta:
         ordering = ["order"]
+        unique_together = ("tournament_edition", "order")
 
     def __str__(self):
         return f"{self.tournament_edition} - {self.name}"

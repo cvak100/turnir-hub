@@ -116,6 +116,11 @@ class PermissionService:
         if hasattr(obj, "tournament_edition"):
             return obj.tournament_edition
 
+        if hasattr(obj, "team_participation"):
+            participation = obj.team_participation
+            if participation is not None:
+                return participation.tournament_edition
+
         if hasattr(obj, "tournament_phase"):
             phase = obj.tournament_phase
             if phase is not None:
@@ -132,3 +137,27 @@ class PermissionService:
                 return group.tournament_phase.tournament_edition
 
         return None
+
+    @staticmethod
+    def get_accessible_edition_ids(user):
+        """
+        Returns:
+        - None if user may access all editions (superuser or any global role)
+        - list of edition ids for scoped-only users
+        - empty list if no roles
+        """
+        if not user or not user.is_authenticated:
+            return []
+        if user.is_superuser:
+            return None
+
+        roles = UserRole.objects.filter(user=user)
+        if roles.filter(tournament_edition__isnull=True).exists():
+            return None
+
+        return list(
+            roles.exclude(tournament_edition=None).values_list(
+                "tournament_edition_id",
+                flat=True,
+            )
+        )

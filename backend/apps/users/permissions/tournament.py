@@ -106,4 +106,16 @@ class HasTournamentPermission(BasePermission):
             except TeamParticipation.DoesNotExist:
                 return None
 
+        group_id = data.get("tournament_phase_group")
+        if group_id:
+            from apps.tournaments.models import TournamentPhaseGroup
+
+            try:
+                group = TournamentPhaseGroup.objects.select_related(
+                    "tournament_phase__tournament_edition",
+                ).get(pk=group_id)
+                return group.tournament_phase.tournament_edition
+            except TournamentPhaseGroup.DoesNotExist:
+                return None
+
         return None

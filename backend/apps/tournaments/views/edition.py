@@ -1,6 +1,7 @@
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
+from apps.core.utils import scope_queryset_to_editions
 from apps.tournaments.models import TournamentEdition
 from apps.tournaments.serializers.edition import (
     TournamentEditionCreateSerializer,
@@ -41,7 +42,7 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
         tournament = self.request.query_params.get("tournament")
         if tournament:
             qs = qs.filter(tournament_id=tournament)
-        return qs
+        return scope_queryset_to_editions(self.request.user, qs, "id")
 
     def get_serializer_class(self):
         if self.action == "list":

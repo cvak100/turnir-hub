@@ -52,7 +52,13 @@ class MatchViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(tournament_phase__tournament_edition_id=edition)
-        return qs
+        from apps.core.utils import scope_queryset_to_editions
+
+        return scope_queryset_to_editions(
+            self.request.user,
+            qs,
+            "tournament_phase__tournament_edition_id",
+        )
 
     def get_serializer_class(self):
         if self.action == "list":
