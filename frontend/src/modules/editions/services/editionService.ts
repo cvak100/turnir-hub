@@ -32,6 +32,41 @@ export interface EditionListItem {
   is_public: boolean;
 }
 
+export type FormatConfig = {
+  id: number;
+  tournament_edition: number;
+  number_of_groups: number;
+  teams_per_group: number;
+  teams_advancing_per_group: number;
+  best_runners_up: boolean;
+  number_of_best_runners_up: number | null;
+  ranking_criteria: string[];
+  half_duration_minutes: number | null;
+  half_time_break_minutes: number | null;
+  buffer_between_matches_minutes: number | null;
+  has_third_place_match: boolean;
+  pairing_method: "auto_cross" | "manual";
+  knockout_home_advantage: boolean;
+  expected_advancing_teams: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormatConfigInput = Partial<{
+  number_of_groups: number;
+  teams_per_group: number;
+  teams_advancing_per_group: number;
+  best_runners_up: boolean;
+  number_of_best_runners_up: number | null;
+  ranking_criteria: string[];
+  half_duration_minutes: number | null;
+  half_time_break_minutes: number | null;
+  buffer_between_matches_minutes: number | null;
+  has_third_place_match: boolean;
+  pairing_method: "auto_cross" | "manual";
+  knockout_home_advantage: boolean;
+}>;
+
 export interface EditionDetail {
   id: number;
   tournament: TournamentListItem;
@@ -48,6 +83,7 @@ export interface EditionDetail {
   format?: EditionListItem["format"];
   public_rules: string;
   configuration?: Record<string, unknown> | null;
+  format_config?: FormatConfig | null;
   global_rule_template?: {
     id: number;
     name: string;
@@ -116,5 +152,47 @@ export const editionService = {
 
   delete(id: number) {
     return api.delete<void>(`/editions/${id}/`);
+  },
+
+  getFormatConfig(editionId: number) {
+    return api.get<FormatConfig>(`/editions/${editionId}/format-config/`);
+  },
+
+  updateFormatConfig(editionId: number, data: FormatConfigInput) {
+    return api.patch<FormatConfig>(`/editions/${editionId}/format-config/`, data);
+  },
+
+  generateStructure(editionId: number, data?: { replace?: boolean }) {
+    return api.post<unknown[]>(`/editions/${editionId}/generate-structure/`, data ?? {});
+  },
+
+  generateGroupMatches(editionId: number, data?: { replace?: boolean }) {
+    return api.post<unknown[]>(
+      `/editions/${editionId}/generate-group-matches/`,
+      data ?? {},
+    );
+  },
+
+  fillKnockout(
+    editionId: number,
+    data?: { replace?: boolean; force?: boolean },
+  ) {
+    return api.post<unknown[]>(`/editions/${editionId}/fill-knockout/`, data ?? {});
+  },
+
+  scheduleMatchTimes(
+    editionId: number,
+    data?: {
+      start_time?: string;
+      start_datetime?: string;
+      match_ids?: number[];
+      only_unscheduled?: boolean;
+      overwrite?: boolean;
+    },
+  ) {
+    return api.post<unknown[]>(
+      `/editions/${editionId}/schedule-match-times/`,
+      data ?? {},
+    );
   },
 };

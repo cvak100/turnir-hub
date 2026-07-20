@@ -313,7 +313,7 @@ export function TournamentAdminDetailPage() {
         global_rule_template: editionForm.global_rule_template
           ? Number(editionForm.global_rule_template)
           : null,
-        apply_format_phases: editingId == null,
+        apply_format_phases: false,
       };
       if (editingId != null) {
         await adminEditionService.update(editingId, payload);

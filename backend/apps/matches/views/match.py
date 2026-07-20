@@ -24,8 +24,13 @@ class MatchViewSet(viewsets.ModelViewSet):
         "home_team_participation__participation_name",
         "away_team_participation__participation_name",
     ]
-    ordering_fields = ["match_date", "match_number", "created_at"]
-    ordering = ["match_date", "match_number"]
+    ordering_fields = [
+        "match_date",
+        "match_number",
+        "created_at",
+        "tournament_phase__order",
+    ]
+    ordering = ["match_date", "tournament_phase__order", "match_number"]
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):

@@ -29,6 +29,19 @@ class MatchListSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
+    phase_name = serializers.CharField(
+        source="tournament_phase.name",
+        read_only=True,
+    )
+    phase_type = serializers.CharField(
+        source="tournament_phase.phase_type",
+        read_only=True,
+    )
+    group_name = serializers.CharField(
+        source="tournament_phase_group.name",
+        read_only=True,
+        allow_null=True,
+    )
 
     class Meta:
         model = Match
@@ -36,6 +49,9 @@ class MatchListSerializer(serializers.ModelSerializer):
             "id",
             "tournament_phase",
             "tournament_phase_group",
+            "phase_name",
+            "phase_type",
+            "group_name",
             "match_number",
             "match_date",
             "status",

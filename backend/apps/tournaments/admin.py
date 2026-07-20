@@ -10,6 +10,7 @@ from .models import (
     TournamentEdition,
     TournamentFinalStanding,
     TournamentFormat,
+    TournamentFormatConfig,
     TournamentPhase,
     TournamentPhaseGroup,
     TournamentPhaseGroupTeam,
@@ -107,6 +108,20 @@ class TournamentEditionAdmin(admin.ModelAdmin):
     list_filter = ("status", "format", "year", "is_public", "tournament")
     search_fields = ("name", "location")
     filter_horizontal = ("sponsors",)
+
+
+@admin.register(TournamentFormatConfig)
+class TournamentFormatConfigAdmin(admin.ModelAdmin):
+    list_display = (
+        "tournament_edition",
+        "number_of_groups",
+        "teams_per_group",
+        "teams_advancing_per_group",
+        "pairing_method",
+        "has_third_place_match",
+    )
+    list_filter = ("pairing_method", "best_runners_up", "has_third_place_match")
+    search_fields = ("tournament_edition__name",)
 
 
 @admin.register(TournamentPhase)

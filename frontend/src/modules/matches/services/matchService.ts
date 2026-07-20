@@ -40,6 +40,9 @@ export interface MatchListItem {
   id: number;
   tournament_phase: number;
   tournament_phase_group: number | null;
+  phase_name?: string;
+  phase_type?: string;
+  group_name?: string | null;
   match_number: number | null;
   match_date: string | null;
   status: StatusRef;
