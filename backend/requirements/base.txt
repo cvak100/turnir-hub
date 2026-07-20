@@ -5,3 +5,7 @@ python-dotenv
 django-cors-headers
 djangorestframework-simplejwt
 Pillow
+channels
+daphne
+django-filter
+drf-spectacular

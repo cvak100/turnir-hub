@@ -6,8 +6,10 @@ from .models import (
     Sport,
     Template,
     Tournament,
+    TournamentCategory,
     TournamentEdition,
     TournamentFinalStanding,
+    TournamentFormat,
     TournamentPhase,
     TournamentPhaseGroup,
     TournamentPhaseGroupTeam,
@@ -43,16 +45,36 @@ class TournamentStatusAdmin(StatusAdminMixin, admin.ModelAdmin):
     ordering = ("order",)
 
 
+@admin.register(TournamentFormat)
+class TournamentFormatAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "order", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "code")
+    ordering = ("order",)
+
+
 @admin.register(GlobalRuleTemplate)
 class GlobalRuleTemplateAdmin(admin.ModelAdmin):
     list_display = (
         "name",
-        "match_duration",
-        "max_substitutions",
+        "players_per_team",
+        "match_duration_minutes",
+        "field_type",
+        "points_for_win",
+        "is_system",
         "is_active",
     )
-    list_filter = ("is_active", "allow_extra_time", "allow_penalties")
-    search_fields = ("name",)
+    list_filter = ("is_active", "is_system", "field_type", "allow_extra_time")
+    search_fields = ("name", "description")
+
+
+@admin.register(TournamentCategory)
+class TournamentCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "order", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "slug")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("order", "name")
 
 
 @admin.register(Template)
@@ -77,11 +99,12 @@ class TournamentEditionAdmin(admin.ModelAdmin):
         "tournament",
         "year",
         "status",
+        "format",
         "start_date",
         "end_date",
         "is_public",
     )
-    list_filter = ("status", "year", "is_public", "tournament")
+    list_filter = ("status", "format", "year", "is_public", "tournament")
     search_fields = ("name", "location")
     filter_horizontal = ("sponsors",)
 
@@ -94,8 +117,9 @@ class TournamentPhaseAdmin(admin.ModelAdmin):
         "phase_type",
         "order",
         "status",
+        "is_active",
     )
-    list_filter = ("phase_type", "status", "tournament_edition")
+    list_filter = ("phase_type", "status", "is_active", "tournament_edition")
     search_fields = ("name",)
 
 

@@ -1,9 +1,11 @@
 from django.conf import settings
 from django.db import models
 
+from .category import TournamentCategory
 from .global_rule_template import GlobalRuleTemplate
 from .sponsor import Sponsor
 from .tournament import Tournament
+from .tournament_format import TournamentFormat
 from .tournament_status import TournamentStatus
 
 
@@ -19,12 +21,25 @@ class TournamentEdition(models.Model):
     end_date = models.DateField()
     registration_start = models.DateTimeField(null=True, blank=True)
     registration_end = models.DateTimeField(null=True, blank=True)
-    category = models.CharField(max_length=100, blank=True)
+    category = models.ForeignKey(
+        TournamentCategory,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="editions",
+    )
     max_teams = models.PositiveIntegerField(null=True, blank=True)
     max_players_per_team = models.PositiveIntegerField(null=True, blank=True)
     status = models.ForeignKey(
         TournamentStatus,
         on_delete=models.PROTECT,
+        related_name="editions",
+    )
+    format = models.ForeignKey(
+        TournamentFormat,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="editions",
     )
     public_rules = models.TextField(blank=True)
