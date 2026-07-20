@@ -34,6 +34,7 @@ class PersonViewSet(viewsets.ModelViewSet):
     queryset = Person.objects.select_related(
         "status",
         "nationality",
+        "user",
         "player",
         "player__status",
     ).prefetch_related(

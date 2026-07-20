@@ -1,8 +1,11 @@
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from apps.players.models import Player, PlayerStatus
 from apps.users.models import Country, Person, PersonRoleType, PersonStatus
+
+User = get_user_model()
 
 ROLE_FLAGS = (
     ("is_player", "player"),
@@ -17,6 +20,12 @@ class PersonStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonStatus
         fields = ["id", "name", "code", "color"]
+
+
+class LinkedUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username"]
 
 
 class CountrySerializer(serializers.ModelSerializer):
@@ -146,6 +155,7 @@ def _role_flags(person: Person) -> dict[str, bool]:
 
 class PersonListSerializer(serializers.ModelSerializer):
     status = PersonStatusSerializer(read_only=True)
+    user = LinkedUserSerializer(read_only=True)
     roles = serializers.SerializerMethodField()
     is_player = serializers.SerializerMethodField()
     is_coach = serializers.SerializerMethodField()
@@ -162,6 +172,7 @@ class PersonListSerializer(serializers.ModelSerializer):
             "nickname",
             "email",
             "status",
+            "user",
             "show_as_anonymous",
             "roles",
             "is_player",
@@ -192,6 +203,7 @@ class PersonListSerializer(serializers.ModelSerializer):
 
 class PersonDetailSerializer(serializers.ModelSerializer):
     status = PersonStatusSerializer(read_only=True)
+    user = LinkedUserSerializer(read_only=True)
     nationality = CountrySerializer(read_only=True)
     roles = serializers.SerializerMethodField()
     is_player = serializers.SerializerMethodField()
@@ -216,6 +228,7 @@ class PersonDetailSerializer(serializers.ModelSerializer):
             "photo",
             "bio",
             "status",
+            "user",
             "email",
             "phone",
             "city",
@@ -279,6 +292,11 @@ class PersonCreateUpdateSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True,
+    )
     roles = RoleTypeInputField(required=False)
     is_player = serializers.BooleanField(required=False)
     is_coach = serializers.BooleanField(required=False)
@@ -301,6 +319,7 @@ class PersonCreateUpdateSerializer(serializers.ModelSerializer):
             "photo",
             "bio",
             "status",
+            "user",
             "email",
             "phone",
             "city",
@@ -315,6 +334,18 @@ class PersonCreateUpdateSerializer(serializers.ModelSerializer):
             "is_official",
             "player",
         ]
+
+    def validate_user(self, user):
+        if user is None:
+            return user
+        qs = Person.objects.filter(user=user)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                "This user account is already linked to another person."
+            )
+        return user
 
     def validate(self, attrs):
         flag_keys = [flag for flag, _ in ROLE_FLAGS]

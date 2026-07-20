@@ -1,4 +1,5 @@
 from apps.users.models import RolePermission, UserRole
+from apps.users.services.identity import get_person_for_user
 
 
 class PermissionService:
@@ -69,7 +70,7 @@ class PermissionService:
 
     @staticmethod
     def get_user_permission_payload(user) -> dict:
-        """Frontend Approach A: roles with permission codes."""
+        """Frontend Approach A: roles with permission codes + linked person."""
         if not user or not user.is_authenticated:
             return {"user": None}
 
@@ -93,12 +94,24 @@ class PermissionService:
                 }
             )
 
+        person_payload = None
+        person = get_person_for_user(user)
+        if person is not None:
+            person_payload = {
+                "id": person.id,
+                "first_name": person.first_name,
+                "last_name": person.last_name,
+                "nickname": person.nickname,
+                "email": person.email,
+            }
+
         return {
             "user": {
                 "id": user.id,
                 "username": user.username,
                 "is_superuser": user.is_superuser,
                 "roles": roles_payload,
+                "person": person_payload,
             }
         }
 

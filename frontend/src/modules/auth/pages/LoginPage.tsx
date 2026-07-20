@@ -28,11 +28,18 @@ export function LoginPage() {
       await login(username, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(
-        isApiError(err)
-          ? err
-          : new Error("Login failed. Check username and password."),
-      );
+      if (isApiError(err)) {
+        setError(err);
+      } else if (err instanceof TypeError) {
+        // fetch() network failure (backend down / CORS / offline)
+        setError(
+          new Error(
+            "Cannot reach API (is the backend running on port 8000?).",
+          ),
+        );
+      } else {
+        setError(new Error("Login failed. Check username and password."));
+      }
     } finally {
       setSubmitting(false);
     }

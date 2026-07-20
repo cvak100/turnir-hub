@@ -4,11 +4,13 @@ import { useAuth } from "@/shared/auth";
 
 export function AccountPage() {
   const { user, roles, logout } = useAuth();
+  const person = user?.person ?? null;
 
   return (
     <div className="page">
       <PageHeader title="Moj račun" subtitle="Tvoj profil in vloge." />
       <section className="border-frame border-frame--md">
+        <h2>Prijava</h2>
         {user ? (
           <ul className="plain-list">
             <li>
@@ -19,6 +21,32 @@ export function AccountPage() {
           </ul>
         ) : (
           <p className="muted">Nisi prijavljen.</p>
+        )}
+      </section>
+
+      <section className="border-frame border-frame--md">
+        <h2>Oseba (domena)</h2>
+        {person ? (
+          <ul className="plain-list">
+            <li>
+              {person.first_name} {person.last_name}
+              {person.nickname ? ` (${person.nickname})` : ""}
+            </li>
+            {person.email ? <li>Email: {person.email}</li> : null}
+            <li>
+              <Link
+                className="button-link border-frame border-frame--sm"
+                to={`/dashboard_admin/persons/${person.id}`}
+              >
+                Odpri kartico osebe
+              </Link>
+            </li>
+          </ul>
+        ) : (
+          <p className="muted">
+            Ta račun še ni povezan z osebo. Admin lahko povezavo nastavi pri
+            urejanju osebe (polje User ID).
+          </p>
         )}
       </section>
 
