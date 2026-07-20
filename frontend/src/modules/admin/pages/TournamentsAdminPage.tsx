@@ -7,31 +7,31 @@ import {
 } from "@/shared/components";
 import { useAuth } from "@/shared/auth";
 import {
-  adminTeamService,
-  type TeamListItem,
-  type TeamStatus,
-} from "@/modules/admin/services/teamService";
+  adminTournamentService,
+  type Sport,
+  type TournamentListItem,
+} from "@/modules/admin/services/tournamentService";
 
-type SortKey = "id" | "name" | "short_name" | "city";
+type SortKey = "id" | "name" | "created_at";
 type SortDir = "asc" | "desc";
 
-export function TeamsAdminPage() {
+export function TournamentsAdminPage() {
   const { isAdmin } = useAuth();
-  const [rows, setRows] = useState<TeamListItem[]>([]);
+  const [rows, setRows] = useState<TournamentListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [sportFilter, setSportFilter] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [statuses, setStatuses] = useState<TeamStatus[]>([]);
-  const [bulkStatusId, setBulkStatusId] = useState("");
+  const [sports, setSports] = useState<Sport[]>([]);
 
   const loadLookups = useCallback(async () => {
-    setStatuses(await adminTeamService.listStatuses());
+    setSports(await adminTournamentService.listSports());
   }, []);
 
   const load = useCallback(async () => {
@@ -39,9 +39,15 @@ export function TeamsAdminPage() {
     setError(null);
     try {
       const ordering = `${sortDir === "desc" ? "-" : ""}${sortKey}`;
-      const page = await adminTeamService.list({
+      const page = await adminTournamentService.list({
         search: search.trim() || undefined,
-        status: statusFilter || undefined,
+        sport: sportFilter || undefined,
+        is_active:
+          activeFilter === ""
+            ? undefined
+            : activeFilter === "1"
+              ? true
+              : false,
         ordering,
         page_size: 100,
       });
@@ -52,7 +58,7 @@ export function TeamsAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, sortDir, sortKey, statusFilter]);
+  }, [activeFilter, search, sortDir, sortKey, sportFilter]);
 
   useEffect(() => {
     void loadLookups().catch((err) => setError(err));
@@ -95,8 +101,8 @@ export function TeamsAdminPage() {
     if (ids.length === 0) return;
     const ok = window.confirm(
       ids.length === 1
-        ? "Izbrišem to ekipo?"
-        : `Izbrišem ${ids.length} ekip?`,
+        ? "Izbrišem / deaktiviram ta turnir?"
+        : `Izbrišem / deaktiviram ${ids.length} turnirjev?`,
     );
     if (!ok) return;
 
@@ -104,25 +110,8 @@ export function TeamsAdminPage() {
     setError(null);
     try {
       for (const id of ids) {
-        await adminTeamService.delete(id);
+        await adminTournamentService.delete(id);
       }
-      await load();
-    } catch (err) {
-      setError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function applyBulkStatus(ids: number[], statusId: number) {
-    if (ids.length === 0) return;
-    setBusy(true);
-    setError(null);
-    try {
-      for (const id of ids) {
-        await adminTeamService.update(id, { status: statusId });
-      }
-      setBulkStatusId("");
       await load();
     } catch (err) {
       setError(err);
@@ -139,16 +128,16 @@ export function TeamsAdminPage() {
   return (
     <div className="page">
       <PageHeader
-        title="Teams"
-        subtitle="Ekipe v sistemu (klubi / dolgoročne identity)."
+        title="Tournaments"
+        subtitle="Dolgoročni turnirji (ne posamezne edicije)."
         actions={
           <>
             {isAdmin ? (
               <Link
                 className="button-link border-frame border-frame--sm"
-                to="/dashboard_admin/teams/new"
+                to="/dashboard_admin/tournaments/new"
               >
-                + Nova ekipa
+                + Nov turnir
               </Link>
             ) : null}
             <Link
@@ -174,21 +163,32 @@ export function TeamsAdminPage() {
             <input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="ime, kratko ime, mesto…"
+              placeholder="ime turnirja…"
             />
           </label>
           <label className="admin-search">
-            Status
+            Šport
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={sportFilter}
+              onChange={(e) => setSportFilter(e.target.value)}
             >
               <option value="">Vsi</option>
-              {statuses.map((s) => (
+              {sports.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="admin-search">
+            Aktivnost
+            <select
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value)}
+            >
+              <option value="">Vsi</option>
+              <option value="1">Aktivni</option>
+              <option value="0">Neaktivni</option>
             </select>
           </label>
           <button
@@ -198,14 +198,15 @@ export function TeamsAdminPage() {
           >
             Išči
           </button>
-          {search || statusFilter ? (
+          {search || sportFilter || activeFilter ? (
             <button
               type="button"
               className="button-secondary border-frame border-frame--sm"
               onClick={() => {
                 setSearchInput("");
                 setSearch("");
-                setStatusFilter("");
+                setSportFilter("");
+                setActiveFilter("");
               }}
             >
               Počisti
@@ -217,45 +218,20 @@ export function TeamsAdminPage() {
       <ErrorBanner error={error} />
       {loading ? <StateMessage variant="loading" /> : null}
       {!loading && rows.length === 0 ? (
-        <StateMessage variant="empty" message="Ni ekip." />
+        <StateMessage variant="empty" message="Ni turnirjev." />
       ) : null}
 
       {!loading && rows.length > 0 ? (
         <section className="border-frame border-frame--md">
           {isAdmin ? (
             <div className="row-actions admin-bulk">
-              <label className="admin-search">
-                Status za izbrane
-                <select
-                  value={bulkStatusId}
-                  disabled={busy || selected.size === 0}
-                  onChange={(e) => setBulkStatusId(e.target.value)}
-                >
-                  <option value="">— izberi status —</option>
-                  {statuses.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <button
                 type="button"
                 className="border-frame border-frame--sm"
-                disabled={busy || selected.size === 0 || !bulkStatusId}
-                onClick={() =>
-                  void applyBulkStatus([...selected], Number(bulkStatusId))
-                }
-              >
-                Spremeni status ({selected.size})
-              </button>
-              <button
-                type="button"
-                className="button-secondary border-frame border-frame--sm"
                 disabled={busy || selected.size === 0}
                 onClick={() => void deleteIds([...selected])}
               >
-                Izbriši izbrane ({selected.size})
+                Izbriši / deaktiviraj ({selected.size})
               </button>
             </div>
           ) : null}
@@ -293,57 +269,39 @@ export function TeamsAdminPage() {
                       Ime{sortMark("name")}
                     </button>
                   </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="linkish"
-                      onClick={() => toggleSort("short_name")}
-                    >
-                      Kratko{sortMark("short_name")}
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="linkish"
-                      onClick={() => toggleSort("city")}
-                    >
-                      Mesto{sortMark("city")}
-                    </button>
-                  </th>
-                  <th>Status</th>
+                  <th>Šport</th>
+                  <th>Aktivno</th>
                   {isAdmin ? <th>Akcije</th> : null}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((team) => (
-                  <tr key={team.id}>
+                {rows.map((t) => (
+                  <tr key={t.id}>
                     {isAdmin ? (
                       <td className="col-check">
                         <input
                           className="sketch-check border-frame border-frame--sm"
                           type="checkbox"
-                          checked={selected.has(team.id)}
-                          onChange={() => toggleOne(team.id)}
-                          aria-label={`Izberi ${team.name}`}
+                          checked={selected.has(t.id)}
+                          onChange={() => toggleOne(t.id)}
+                          aria-label={`Izberi ${t.name}`}
                         />
                       </td>
                     ) : null}
-                    <td>{team.id}</td>
+                    <td>{t.id}</td>
                     <td>
-                      <Link to={`/dashboard_admin/teams/${team.id}`}>
-                        {team.name}
+                      <Link to={`/dashboard_admin/tournaments/${t.id}`}>
+                        {t.name}
                       </Link>
                     </td>
-                    <td>{team.short_name || "—"}</td>
-                    <td>{team.city || "—"}</td>
-                    <td>{team.status?.name ?? "—"}</td>
+                    <td>{t.sport?.name ?? "—"}</td>
+                    <td>{t.is_active ? "da" : "ne"}</td>
                     {isAdmin ? (
                       <td>
                         <div className="row-actions">
                           <Link
                             className="linkish"
-                            to={`/dashboard_admin/teams/${team.id}/edit`}
+                            to={`/dashboard_admin/tournaments/${t.id}/edit`}
                           >
                             Edit
                           </Link>
@@ -351,7 +309,7 @@ export function TeamsAdminPage() {
                             type="button"
                             className="linkish"
                             disabled={busy}
-                            onClick={() => void deleteIds([team.id])}
+                            onClick={() => void deleteIds([t.id])}
                           >
                             Delete
                           </button>

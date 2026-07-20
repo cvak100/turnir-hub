@@ -52,6 +52,10 @@ class TeamParticipationPlayerViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(team_participation__tournament_edition_id=edition)
+        # Players who ever appeared for a base Team (any edition).
+        team = self.request.query_params.get("team")
+        if team:
+            qs = qs.filter(team_participation__team_id=team)
         from apps.core.utils import scope_queryset_to_editions
 
         return scope_queryset_to_editions(

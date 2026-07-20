@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
-from apps.tournaments.models import TournamentPhase, TournamentPhaseGroup, TournamentPhaseGroupTeam
+from apps.tournaments.models import (
+    TournamentPhase,
+    TournamentPhaseGroup,
+    TournamentPhaseGroupTeam,
+)
 
 
 class TournamentPhaseListSerializer(serializers.ModelSerializer):
@@ -13,6 +17,8 @@ class TournamentPhaseListSerializer(serializers.ModelSerializer):
             "phase_type",
             "order",
             "status",
+            "is_active",
+            "config",
         ]
 
 
@@ -26,7 +32,8 @@ class TournamentPhaseDetailSerializer(serializers.ModelSerializer):
             "phase_type",
             "order",
             "status",
-            "rules",
+            "is_active",
+            "config",
             "created_at",
             "updated_at",
         ]
@@ -41,7 +48,8 @@ class TournamentPhaseCreateUpdateSerializer(serializers.ModelSerializer):
             "phase_type",
             "order",
             "status",
-            "rules",
+            "is_active",
+            "config",
         ]
 
 

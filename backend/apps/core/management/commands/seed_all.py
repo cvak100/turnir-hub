@@ -12,4 +12,6 @@ class Command(BaseCommand):
         call_command("seed_event_types")
         call_command("seed_roles_permissions")
         call_command("seed_templates")
+        call_command("seed_global_rule_templates")
+        call_command("seed_tournament_formats")
         self.stdout.write(self.style.SUCCESS("All seeds completed."))

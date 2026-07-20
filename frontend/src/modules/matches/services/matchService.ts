@@ -9,13 +9,24 @@ export interface PhaseListItem {
   phase_type: string;
   order: number;
   status: string;
+  is_active: boolean;
+  config: Record<string, unknown> | null;
 }
 
 export interface PhaseDetail extends PhaseListItem {
-  rules: unknown;
   created_at: string;
   updated_at: string;
 }
+
+export type PhaseInput = {
+  tournament_edition: number;
+  name: string;
+  phase_type: string;
+  order: number;
+  status?: string;
+  is_active?: boolean;
+  config?: Record<string, unknown> | null;
+};
 
 export interface GroupListItem {
   id: number;
@@ -121,6 +132,44 @@ export const phaseService = {
   get(id: number) {
     return api.get<PhaseDetail>(`/phases/${id}/`);
   },
+
+  create(data: PhaseInput) {
+    return api.post<PhaseDetail>("/phases/", data);
+  },
+
+  update(id: number, data: Partial<PhaseInput>) {
+    return api.patch<PhaseDetail>(`/phases/${id}/`, data);
+  },
+
+  delete(id: number) {
+    return api.delete<void>(`/phases/${id}/`);
+  },
+
+  generateGroups(
+    id: number,
+    data: {
+      number_of_groups: number;
+      max_teams?: number | null;
+      replace?: boolean;
+    },
+  ) {
+    return api.post<GroupListItem[]>(`/phases/${id}/generate-groups/`, data);
+  },
+
+  generateMatches(
+    id: number,
+    data?: { replace?: boolean; match_count?: number },
+  ) {
+    return api.post<MatchListItem[]>(`/phases/${id}/generate-matches/`, data ?? {});
+  },
+};
+
+export type GroupTeamItem = {
+  id: number;
+  tournament_phase_group: number;
+  team_participation: number;
+  participation_name: string;
+  order: number | null;
 };
 
 export const groupService = {
@@ -128,6 +177,50 @@ export const groupService = {
     return api.get<PaginatedResponse<GroupListItem>>("/groups/", {
       params,
     });
+  },
+
+  create(data: {
+    tournament_phase: number;
+    name: string;
+    order: number;
+    max_teams?: number | null;
+  }) {
+    return api.post<GroupListItem>("/groups/", data);
+  },
+
+  update(
+    id: number,
+    data: Partial<{
+      name: string;
+      order: number;
+      max_teams: number | null;
+    }>,
+  ) {
+    return api.patch<GroupListItem>(`/groups/${id}/`, data);
+  },
+
+  delete(id: number) {
+    return api.delete<void>(`/groups/${id}/`);
+  },
+};
+
+export const groupTeamService = {
+  list(params?: QueryParams) {
+    return api.get<PaginatedResponse<GroupTeamItem>>("/group-teams/", {
+      params,
+    });
+  },
+
+  create(data: {
+    tournament_phase_group: number;
+    team_participation: number;
+    order?: number | null;
+  }) {
+    return api.post<GroupTeamItem>("/group-teams/", data);
+  },
+
+  delete(id: number) {
+    return api.delete<void>(`/group-teams/${id}/`);
   },
 };
 
@@ -141,6 +234,34 @@ export const matchService = {
 
   get(id: number) {
     return api.get<MatchDetail>(`/matches/${id}/`, { auth: false });
+  },
+
+  create(data: {
+    tournament_phase: number;
+    tournament_phase_group?: number | null;
+    match_number?: number | null;
+    home_team_participation?: number | null;
+    away_team_participation?: number | null;
+    status?: number;
+  }) {
+    return api.post<MatchDetail>("/matches/", data);
+  },
+
+  update(
+    id: number,
+    data: Partial<{
+      home_team_participation: number | null;
+      away_team_participation: number | null;
+      match_number: number | null;
+      match_date: string | null;
+      tournament_phase_group: number | null;
+    }>,
+  ) {
+    return api.patch<MatchDetail>(`/matches/${id}/`, data);
+  },
+
+  delete(id: number) {
+    return api.delete<void>(`/matches/${id}/`);
   },
 
   start(id: number) {

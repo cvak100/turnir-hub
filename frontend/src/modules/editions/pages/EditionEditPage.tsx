@@ -6,6 +6,7 @@ import {
   StateMessage,
 } from "@/shared/components";
 import { useAsyncData } from "@/shared/hooks/useAsyncData";
+import { adminTournamentService } from "@/modules/admin/services/tournamentService";
 import { editionService } from "../services/editionService";
 
 export function EditionEditPage() {
@@ -15,6 +16,10 @@ export function EditionEditPage() {
   const existing = useAsyncData(
     () => editionService.get(editionId),
     [editionId],
+  );
+  const categories = useAsyncData(
+    () => adminTournamentService.listCategories(),
+    [],
   );
 
   const [name, setName] = useState("");
@@ -33,7 +38,9 @@ export function EditionEditPage() {
     setName(existing.data.name);
     setYear(String(existing.data.year));
     setLocation(existing.data.location ?? "");
-    setCategory(existing.data.category ?? "");
+    setCategory(
+      existing.data.category ? String(existing.data.category.id) : "",
+    );
     setStartDate(existing.data.start_date ?? "");
     setEndDate(existing.data.end_date ?? "");
     setStatusId(String(existing.data.status?.id ?? ""));
@@ -49,7 +56,7 @@ export function EditionEditPage() {
         name: name.trim(),
         year: Number(year),
         location,
-        category,
+        category: category ? Number(category) : null,
         start_date: startDate,
         end_date: endDate,
         status: Number(statusId),
@@ -76,7 +83,7 @@ export function EditionEditPage() {
         subtitle="Basic edition fields."
         actions={<Link to={`/editions/${editionId}`}>Back</Link>}
       />
-      <ErrorBanner error={error ?? existing.error} />
+      <ErrorBanner error={error ?? existing.error ?? categories.error} />
       <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
         <label>
           Name
@@ -124,7 +131,18 @@ export function EditionEditPage() {
         </label>
         <label>
           Category
-          <input value={category} onChange={(e) => setCategory(e.target.value)} />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            disabled={categories.loading}
+          >
+            <option value="">—</option>
+            {(categories.data ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="checkbox-row">
           <input

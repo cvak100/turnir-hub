@@ -76,7 +76,7 @@ export function EditionDetailPage() {
               </Link>
             </li>
             <li>Location: {edition.data.location || "—"}</li>
-            <li>Category: {edition.data.category || "—"}</li>
+            <li>Category: {edition.data.category?.name || "—"}</li>
             <li>
               Dates: {edition.data.start_date} → {edition.data.end_date}
             </li>

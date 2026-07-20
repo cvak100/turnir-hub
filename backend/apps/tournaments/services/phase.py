@@ -1,6 +1,7 @@
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
 
-from apps.core.exceptions import ConflictError, InvalidStateError
+from apps.core.exceptions import ConflictError
 from apps.tournaments.models import TournamentPhase
 
 
@@ -14,10 +15,7 @@ class TournamentPhaseService:
         if exclude_id:
             qs = qs.exclude(pk=exclude_id)
         if qs.exists():
-            raise ConflictError(
-                "Phase order must be unique within an edition.",
-                details={"order": ["Phase order must be unique within an edition."]},
-            )
+            raise ConflictError("Phase order must be unique within an edition.")
 
     @staticmethod
     @transaction.atomic
@@ -46,6 +44,43 @@ class TournamentPhaseService:
     @staticmethod
     def validate_can_delete(*, phase: TournamentPhase):
         if phase.matches.exists():
-            raise InvalidStateError(
+            raise ValidationError(
                 "Cannot delete a phase that already has matches."
             )
+        if phase.groups.exists():
+            raise ValidationError(
+                "Cannot delete a phase that already has groups. "
+                "Remove groups first."
+            )
+
+    @staticmethod
+    @transaction.atomic
+    def apply_format_phases(*, edition, tournament_format, replace: bool = False):
+        """
+        Create default phases from a TournamentFormat.
+        If replace=True, delete existing phases first (only if no matches/groups).
+        If replace=False and phases already exist, do nothing.
+        """
+        existing = list(edition.phases.all())
+        if existing and not replace:
+            return existing
+
+        if existing and replace:
+            for phase in existing:
+                TournamentPhaseService.validate_can_delete(phase=phase)
+            edition.phases.all().delete()
+
+        created = []
+        for row in tournament_format.default_phases or []:
+            created.append(
+                TournamentPhase.objects.create(
+                    tournament_edition=edition,
+                    name=row.get("name") or row.get("phase_type", "Phase"),
+                    phase_type=row["phase_type"],
+                    order=int(row.get("order") or (len(created) + 1)),
+                    config=row.get("config") or {},
+                    is_active=True,
+                    status="not_started",
+                )
+            )
+        return created

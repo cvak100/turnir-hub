@@ -2,6 +2,8 @@ import type { PaginatedResponse, QueryParams } from "@/shared/api";
 import { api } from "@/shared/api";
 import type { PersonMinimal, StatusRef } from "@/shared/types";
 
+export type PlayerStatus = StatusRef;
+
 export interface PlayerListItem {
   id: number;
   person: PersonMinimal;
@@ -26,7 +28,7 @@ export interface PlayerDetail extends PlayerListItem {
 
 export type PlayerInput = {
   person: number;
-  status: number;
+  status?: number;
   position?: string;
   preferred_jersey_number?: number | null;
   is_active?: boolean;
@@ -41,7 +43,7 @@ export interface TeamParticipationPlayerListItem {
   position: string;
   is_captain: boolean;
   is_vice_captain: boolean;
-  status: StatusRef;
+  status: StatusRef | null;
   is_active: boolean;
   goals: number;
   assists: number;
@@ -56,6 +58,7 @@ export type TeamParticipationPlayerInput = {
   position?: string;
   status?: number;
   is_active?: boolean;
+  notes?: string;
 };
 
 export const playerService = {
@@ -69,6 +72,10 @@ export const playerService = {
 
   create(data: PlayerInput) {
     return api.post<PlayerDetail>("/players/", data);
+  },
+
+  listStatuses() {
+    return api.get<PlayerStatus[]>("/player-statuses/");
   },
 };
 
@@ -85,5 +92,16 @@ export const participationPlayerService = {
       "/team-participation-players/",
       data,
     );
+  },
+
+  update(id: number, data: Partial<TeamParticipationPlayerInput>) {
+    return api.patch<TeamParticipationPlayerListItem>(
+      `/team-participation-players/${id}/`,
+      data,
+    );
+  },
+
+  delete(id: number) {
+    return api.delete<void>(`/team-participation-players/${id}/`);
   },
 };

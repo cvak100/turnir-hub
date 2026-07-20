@@ -77,13 +77,39 @@ class TeamParticipationPlayerService:
                 "team_participation and player are required."
             )
 
+        payload = dict(data)
+        if not payload.get("status"):
+            from apps.players.models import PlayerStatus
+
+            payload["status"] = (
+                PlayerStatus.objects.filter(code="active").first()
+                or PlayerStatus.objects.order_by("order").first()
+            )
+            if payload["status"] is None:
+                raise ValidationError("No PlayerStatus available.")
+
+        if not payload.get("position"):
+            payload["position"] = player.position or ""
+
+        jersey_number = payload.get("jersey_number")
+        if jersey_number is None and player.preferred_jersey_number is not None:
+            preferred = player.preferred_jersey_number
+            taken = TeamParticipationPlayer.objects.filter(
+                team_participation=team_participation,
+                jersey_number=preferred,
+            ).exists()
+            if not taken:
+                jersey_number = preferred
+                payload["jersey_number"] = preferred
+
         TeamParticipationPlayerService._validate_assignment(
             team_participation=team_participation,
             player=player,
-            jersey_number=data.get("jersey_number"),
-            is_captain=bool(data.get("is_captain", False)),
+            jersey_number=jersey_number,
+            is_captain=bool(payload.get("is_captain", False)),
         )
-        return TeamParticipationPlayer.objects.create(**data)
+
+        return TeamParticipationPlayer.objects.create(**payload)
 
     @staticmethod
     @transaction.atomic

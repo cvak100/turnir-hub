@@ -14,6 +14,12 @@ const ADMIN_MODULES = [
     description: "Ekipe, registracije na turnirje…",
     path: "/dashboard_admin/teams",
   },
+  {
+    id: "tournaments",
+    label: "Tournaments",
+    description: "Turnirji in njihove edicije…",
+    path: "/dashboard_admin/tournaments",
+  },
 ] as const;
 
 export function AdminDashboardPage() {

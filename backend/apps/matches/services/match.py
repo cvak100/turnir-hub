@@ -475,3 +475,231 @@ class MatchService:
             setattr(match, attr, value)
         match.save()
         return match
+
+    ROUND_MATCH_COUNTS = {
+        "round_of_128": 64,
+        "round_of_64": 32,
+        "round_of_32": 16,
+        "round_of_16": 8,
+        "quarterfinal": 4,
+        "semifinal": 2,
+        "final": 1,
+        "third_place": 1,
+        "winners": 4,
+        "losers": 4,
+    }
+
+    @staticmethod
+    def _expected_group_team_count(*, group, config: dict) -> int:
+        assigned = group.group_teams.count()
+        if assigned >= 2:
+            return assigned
+        raw = config.get("teams_per_group")
+        if raw is None or raw == "":
+            raw = group.max_teams
+        try:
+            return int(raw) if raw is not None else 0
+        except (TypeError, ValueError):
+            return 0
+
+    @staticmethod
+    def _round_robin_match_count(team_count: int) -> int:
+        if team_count < 2:
+            return 0
+        return team_count * (team_count - 1) // 2
+
+    @staticmethod
+    def _assert_matches_empty_tbd(matches, *, label: str):
+        for match in matches:
+            if match.home_team_participation_id or match.away_team_participation_id:
+                raise ValidationError(
+                    {
+                        "matches": (
+                            f"{label} already has matches with teams assigned. "
+                            "Remove them first or do not use replace."
+                        )
+                    }
+                )
+            if match.events.exists():
+                raise ValidationError(
+                    {"matches": f"{label} has matches with events."}
+                )
+
+    @staticmethod
+    def _next_match_number(matches) -> int:
+        nums = [m.match_number for m in matches if m.match_number is not None]
+        return (max(nums) if nums else 0) + 1
+
+    @staticmethod
+    def _create_tbd_matches(
+        *,
+        phase,
+        group,
+        status,
+        count: int,
+        start_number: int,
+    ) -> list:
+        created = []
+        num = start_number
+        for _ in range(count):
+            created.append(
+                Match.objects.create(
+                    tournament_phase=phase,
+                    tournament_phase_group=group,
+                    match_number=num,
+                    status=status,
+                    home_team_participation=None,
+                    away_team_participation=None,
+                )
+            )
+            num += 1
+        return created
+
+    @staticmethod
+    @transaction.atomic
+    def generate_placeholder_matches(*, phase, replace: bool = False, match_count=None):
+        """
+        Ensure expected TBD match slots exist for a phase.
+        - If count already matches: leave alone
+        - If fewer matches: add only the missing TBD slots (keeps filled matches)
+        - If replace=True: wipe empty TBD and recreate full set
+        - If more matches than expected (and not replace): error unless extras are empty TBD
+        """
+        status = MatchService._default_status()
+        if status is None:
+            raise InvalidStateError("No MatchStatus available.")
+
+        created = []
+        if phase.phase_type == "group_stage":
+            groups = list(phase.groups.order_by("order", "id"))
+            if not groups:
+                raise ValidationError(
+                    {"groups": "Generate groups before creating group matches."}
+                )
+            config = phase.config or {}
+            for group in groups:
+                n = MatchService._expected_group_team_count(group=group, config=config)
+                if n < 2:
+                    continue
+                expected = MatchService._round_robin_match_count(n)
+                existing = list(group.matches.order_by("match_number", "id"))
+                existing_count = len(existing)
+
+                if replace and existing:
+                    MatchService._assert_matches_empty_tbd(
+                        existing, label=f"Group '{group.name}'"
+                    )
+                    group.matches.all().delete()
+                    existing = []
+                    existing_count = 0
+
+                if existing_count == expected:
+                    continue
+
+                if group.max_teams != n:
+                    group.max_teams = n
+                    group.save(update_fields=["max_teams", "updated_at"])
+
+                if existing_count < expected:
+                    missing = expected - existing_count
+                    created.extend(
+                        MatchService._create_tbd_matches(
+                            phase=phase,
+                            group=group,
+                            status=status,
+                            count=missing,
+                            start_number=MatchService._next_match_number(existing),
+                        )
+                    )
+                    continue
+
+                # Too many matches: remove trailing empty TBD only
+                excess = existing_count - expected
+                removable = [
+                    m
+                    for m in reversed(existing)
+                    if not m.home_team_participation_id
+                    and not m.away_team_participation_id
+                    and not m.events.exists()
+                ]
+                if len(removable) < excess:
+                    raise ValidationError(
+                        {
+                            "matches": (
+                                f"Group '{group.name}' has more matches than expected "
+                                "and extras are not empty TBD."
+                            )
+                        }
+                    )
+                for match in removable[:excess]:
+                    match.delete()
+            return created
+
+        # Knockout / third_place / league / other
+        count = match_count
+        if count is None:
+            config = phase.config or {}
+            code = config.get("round_code")
+            if isinstance(code, str) and code in MatchService.ROUND_MATCH_COUNTS:
+                count = MatchService.ROUND_MATCH_COUNTS[code]
+            elif config.get("number_of_teams"):
+                try:
+                    teams = int(config["number_of_teams"])
+                    count = max(1, teams // 2)
+                except (TypeError, ValueError):
+                    count = 1
+            else:
+                count = 1
+        try:
+            count = int(count)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError({"match_count": "Must be an integer."}) from exc
+        if count < 1 or count > 128:
+            raise ValidationError({"match_count": "Must be between 1 and 128."})
+
+        existing = list(
+            phase.matches.filter(tournament_phase_group__isnull=True).order_by(
+                "match_number", "id"
+            )
+        )
+        if replace and existing:
+            MatchService._assert_matches_empty_tbd(existing, label="This phase")
+            phase.matches.filter(tournament_phase_group__isnull=True).delete()
+            existing = []
+
+        if len(existing) == count:
+            return []
+
+        if len(existing) < count:
+            missing = count - len(existing)
+            created.extend(
+                MatchService._create_tbd_matches(
+                    phase=phase,
+                    group=None,
+                    status=status,
+                    count=missing,
+                    start_number=MatchService._next_match_number(existing),
+                )
+            )
+            return created
+
+        excess = len(existing) - count
+        removable = [
+            m
+            for m in reversed(existing)
+            if not m.home_team_participation_id
+            and not m.away_team_participation_id
+            and not m.events.exists()
+        ]
+        if len(removable) < excess:
+            raise ValidationError(
+                {
+                    "matches": (
+                        "Phase has more matches than expected "
+                        "and extras are not empty TBD."
+                    )
+                }
+            )
+        for match in removable[:excess]:
+            match.delete()
+        return created

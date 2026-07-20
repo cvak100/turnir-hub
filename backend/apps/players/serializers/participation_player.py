@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.players.models import TeamParticipationPlayer
+from apps.players.models import PlayerStatus, TeamParticipationPlayer
 from apps.players.serializers.player import PlayerListSerializer, PlayerStatusSerializer
 
 
@@ -54,6 +54,12 @@ class TeamParticipationPlayerDetailSerializer(serializers.ModelSerializer):
 
 
 class TeamParticipationPlayerCreateUpdateSerializer(serializers.ModelSerializer):
+    status = serializers.PrimaryKeyRelatedField(
+        queryset=PlayerStatus.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = TeamParticipationPlayer
         fields = [

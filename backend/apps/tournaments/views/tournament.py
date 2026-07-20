@@ -17,7 +17,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.select_related("sport", "contact_person").all()
     filterset_fields = ["sport", "is_active"]
     search_fields = ["name"]
-    ordering_fields = ["name", "created_at"]
+    ordering_fields = ["id", "name", "created_at"]
     ordering = ["name"]
 
     def get_permissions(self):

@@ -3,9 +3,10 @@ from django.core.management.base import BaseCommand
 from apps.tournaments.models import Template
 
 TEMPLATES = [
-    ("Phase Type Group Stage", "phase_type.group_stage", "phase_type", {"value": "GROUP_STAGE"}),
-    ("Phase Type Knockout", "phase_type.knockout", "phase_type", {"value": "KNOCKOUT"}),
-    ("Phase Type Final", "phase_type.final", "phase_type", {"value": "FINAL"}),
+    ("Phase Type Group Stage", "phase_type.group_stage", "phase_type", {"value": "group_stage"}),
+    ("Phase Type Knockout", "phase_type.knockout", "phase_type", {"value": "knockout"}),
+    ("Phase Type Third Place", "phase_type.third_place", "phase_type", {"value": "third_place"}),
+    ("Phase Type League", "phase_type.league", "phase_type", {"value": "league"}),
     ("Half First", "half.first", "half", {"value": "1"}),
     ("Half Second", "half.second", "half", {"value": "2"}),
     ("Half Extra 1", "half.et1", "half", {"value": "ET1"}),

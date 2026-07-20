@@ -2,6 +2,7 @@ from .edition import (
     TournamentEditionCreateSerializer,
     TournamentEditionDetailSerializer,
     TournamentEditionListSerializer,
+    TournamentFormatSerializer,
     TournamentStatusSerializer,
 )
 from .phase import (
@@ -28,6 +29,7 @@ __all__ = [
     "TournamentDetailSerializer",
     "TournamentCreateUpdateSerializer",
     "TournamentStatusSerializer",
+    "TournamentFormatSerializer",
     "TournamentEditionListSerializer",
     "TournamentEditionDetailSerializer",
     "TournamentEditionCreateSerializer",

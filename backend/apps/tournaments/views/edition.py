@@ -40,12 +40,17 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
             "tournament",
             "tournament__sport",
             "status",
+            "format",
             "contact_person",
             "global_rule_template",
+            "category",
         ).all()
         tournament = self.request.query_params.get("tournament")
         if tournament:
             qs = qs.filter(tournament_id=tournament)
+        fmt = self.request.query_params.get("format")
+        if fmt:
+            qs = qs.filter(format_id=fmt)
         if not self.request.user.is_authenticated:
             return qs.filter(is_public=True)
         return scope_queryset_to_editions(self.request.user, qs, "id")

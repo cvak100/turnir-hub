@@ -11,6 +11,9 @@ import { PersonsAdminPage } from "@/modules/admin/pages/PersonsAdminPage";
 import { TeamAdminDetailPage } from "@/modules/admin/pages/TeamDetailPage";
 import { TeamFormPage } from "@/modules/admin/pages/TeamFormPage";
 import { TeamsAdminPage } from "@/modules/admin/pages/TeamsAdminPage";
+import { TournamentAdminDetailPage } from "@/modules/admin/pages/TournamentDetailPage";
+import { TournamentAdminFormPage } from "@/modules/admin/pages/TournamentFormPage";
+import { TournamentsAdminPage } from "@/modules/admin/pages/TournamentsAdminPage";
 import { AccountPage } from "@/modules/account/pages/AccountPage";
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
 import { UnauthorizedPage } from "@/modules/auth/pages/UnauthorizedPage";
@@ -93,6 +96,22 @@ export function AppRouter() {
                 <Route
                   path="/dashboard_admin/teams/:id/edit"
                   element={<TeamFormPage mode="edit" />}
+                />
+                <Route
+                  path="/dashboard_admin/tournaments"
+                  element={<TournamentsAdminPage />}
+                />
+                <Route
+                  path="/dashboard_admin/tournaments/new"
+                  element={<TournamentAdminFormPage mode="create" />}
+                />
+                <Route
+                  path="/dashboard_admin/tournaments/:id"
+                  element={<TournamentAdminDetailPage />}
+                />
+                <Route
+                  path="/dashboard_admin/tournaments/:id/edit"
+                  element={<TournamentAdminFormPage mode="edit" />}
                 />
               </Route>
               <Route
