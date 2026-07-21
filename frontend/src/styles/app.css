@@ -779,12 +779,41 @@ input.sketch-check:focus-visible {
   margin: 0.65rem 0;
 }
 
-.live-match-status {
-  margin: 0.35rem 0 0;
+.match-detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-detail-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-detail-form .match-detail-fieldset > .border-frame h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.match-detail-scoreline {
   text-align: center;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #444;
+  margin: 0 0 0.75rem;
+}
+
+.match-detail-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.85rem;
+}
+
+.match-detail-meta {
+  margin: 0.85rem 0 0;
 }
 
 .live-clock {

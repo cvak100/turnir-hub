@@ -253,11 +253,28 @@ export const matchService = {
   update(
     id: number,
     data: Partial<{
+      tournament_phase: number;
+      tournament_phase_group: number | null;
       home_team_participation: number | null;
       away_team_participation: number | null;
       match_number: number | null;
       match_date: string | null;
-      tournament_phase_group: number | null;
+      status: number;
+      home_score: number | null;
+      away_score: number | null;
+      halftime_home_score: number | null;
+      halftime_away_score: number | null;
+      extra_time_home_score: number | null;
+      extra_time_away_score: number | null;
+      home_score_penalties: number | null;
+      away_score_penalties: number | null;
+      is_extra_time: boolean;
+      is_penalties: boolean;
+      is_walkover: boolean;
+      duration_minutes: number | null;
+      attendance: number | null;
+      referee: number | null;
+      notes: string;
     }>,
   ) {
     return api.patch<MatchDetail>(`/matches/${id}/`, data);
