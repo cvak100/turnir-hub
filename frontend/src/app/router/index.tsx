@@ -5,6 +5,7 @@ import { RequireAdmin } from "@/app/router/RequireAdmin";
 import { RequireAuth } from "@/app/router/RequireAuth";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { AdminDashboardPage } from "@/modules/admin/pages/AdminDashboardPage";
+import { GeneratorAdminPage } from "@/modules/admin/pages/GeneratorAdminPage";
 import { PersonDetailPage } from "@/modules/admin/pages/PersonDetailPage";
 import { PersonFormPage } from "@/modules/admin/pages/PersonFormPage";
 import { PersonsAdminPage } from "@/modules/admin/pages/PersonsAdminPage";
@@ -68,6 +69,10 @@ export function AppRouter() {
                 <Route
                   path="/dashboard_admin"
                   element={<AdminDashboardPage />}
+                />
+                <Route
+                  path="/dashboard_admin/generator"
+                  element={<GeneratorAdminPage />}
                 />
                 <Route
                   path="/dashboard_admin/persons"

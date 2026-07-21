@@ -2065,3 +2065,28 @@ input.sketch-check:focus-visible {
   stroke: var(--ink);
   stroke-width: 0.8;
 }
+
+
+.generator-flow {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.35rem;
+}
+
+.generator-flow li {
+  margin: 0.35rem 0;
+}
+
+.generator-result__champ {
+  font-size: 1.25rem;
+  margin: 0.35rem 0 0.75rem;
+  transform: rotate(-0.4deg);
+}
+
+.generator-steps {
+  margin: 0.5rem 0 0;
+  padding-left: 1.35rem;
+}
+
+.generator-steps li {
+  margin: 0.55rem 0;
+}

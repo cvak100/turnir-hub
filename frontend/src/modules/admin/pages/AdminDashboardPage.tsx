@@ -20,6 +20,12 @@ const ADMIN_MODULES = [
     description: "Turnirji in njihove edicije…",
     path: "/dashboard_admin/tournaments",
   },
+  {
+    id: "generator",
+    label: "Generator",
+    description: "Demo flow: Trojke turnir z ekipami, fazami in simulacijo.",
+    path: "/dashboard_admin/generator",
+  },
 ] as const;
 
 export function AdminDashboardPage() {
