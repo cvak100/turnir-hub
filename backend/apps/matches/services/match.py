@@ -201,7 +201,31 @@ class MatchEventService:
         return match
 
     @staticmethod
+    def _match_duration_for_stats(match: Match) -> int:
+        if match.duration_minutes:
+            return int(match.duration_minutes)
+        phase = getattr(match, "tournament_phase", None)
+        edition = getattr(phase, "tournament_edition", None) if phase else None
+        if edition is not None:
+            rules = getattr(edition, "global_rule_template", None)
+            if rules and getattr(rules, "match_duration_minutes", None):
+                return int(rules.match_duration_minutes)
+            cfg = getattr(edition, "format_config", None)
+            if cfg and getattr(cfg, "half_duration_minutes", None):
+                return int(cfg.half_duration_minutes) * 2
+        return 0
+
+    @staticmethod
     def recalculate_player_stats(*, match: Match):
+        """
+        Recompute cumulative participation stats from finished matches
+        (plus the match currently being edited / finished).
+
+        matches_played / minutes_played count for any player with a
+        non-shootout event on that match — so goals imply matches.
+        """
+        from django.db.models import Prefetch, Q
+
         participation_ids = [
             pid
             for pid in (
@@ -210,10 +234,20 @@ class MatchEventService:
             )
             if pid
         ]
-        roster = TeamParticipationPlayer.objects.filter(
+        if not participation_ids:
+            return
+
+        roster_qs = TeamParticipationPlayer.objects.filter(
             team_participation_id__in=participation_ids,
         )
-        roster.update(goals=0, assists=0, yellow_cards=0, red_cards=0)
+        roster_qs.update(
+            goals=0,
+            assists=0,
+            yellow_cards=0,
+            red_cards=0,
+            matches_played=0,
+            minutes_played=0,
+        )
 
         roster_map = {
             (row.team_participation_id, row.player_id): row
@@ -222,34 +256,81 @@ class MatchEventService:
             )
         }
 
-        events = match.events.select_related("event_type").filter(player__isnull=False)
-        for event in events:
-            # Penalty shootout does not count toward player tournament stats.
-            if MatchEventService._is_shootout_half(event.half):
-                continue
-            key = (event.team_participation_id, event.player_id)
-            row = roster_map.get(key)
-            if row is None:
-                continue
-            code = event.event_type.code
-            if code in GOAL_EVENT_CODES or code == "goal":
-                if not event.is_own_goal and code != OWN_GOAL_CODE:
-                    row.goals += 1
-            if code == ASSIST_CODE:
-                row.assists += 1
-            if event.related_player_id and code in GOAL_EVENT_CODES | {"goal"}:
-                related_key = (event.team_participation_id, event.related_player_id)
-                related = roster_map.get(related_key)
-                if related is not None:
-                    related.assists += 1
-            if code == YELLOW_CODE:
-                row.yellow_cards += 1
-            if code in RED_CODES:
-                row.red_cards += 1
+        finished_status_ids = list(
+            MatchStatus.objects.filter(
+                code__in=FINISHED_MATCH_STATUS_CODES
+            ).values_list("id", flat=True)
+        )
+        related_matches = (
+            Match.objects.filter(
+                Q(home_team_participation_id__in=participation_ids)
+                | Q(away_team_participation_id__in=participation_ids)
+            )
+            .filter(Q(pk=match.pk) | Q(status_id__in=finished_status_ids))
+            .select_related(
+                "tournament_phase__tournament_edition__global_rule_template",
+                "tournament_phase__tournament_edition__format_config",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "events",
+                    queryset=MatchEvent.objects.select_related("event_type").filter(
+                        player__isnull=False
+                    ),
+                )
+            )
+            .order_by("id")
+        )
+
+        for m in related_matches:
+            appeared: set[tuple[int, int]] = set()
+            events = [
+                e
+                for e in m.events.all()
+                if not MatchEventService._is_shootout_half(e.half)
+            ]
+            for event in events:
+                key = (event.team_participation_id, event.player_id)
+                row = roster_map.get(key)
+                if row is None:
+                    continue
+                appeared.add(key)
+                code = event.event_type.code
+                if code in GOAL_EVENT_CODES or code == "goal":
+                    if not event.is_own_goal and code != OWN_GOAL_CODE:
+                        row.goals += 1
+                if code == ASSIST_CODE:
+                    row.assists += 1
+                if event.related_player_id and code in GOAL_EVENT_CODES | {"goal"}:
+                    related_key = (
+                        event.team_participation_id,
+                        event.related_player_id,
+                    )
+                    related = roster_map.get(related_key)
+                    if related is not None:
+                        related.assists += 1
+                        appeared.add(related_key)
+                if code == YELLOW_CODE:
+                    row.yellow_cards += 1
+                if code in RED_CODES:
+                    row.red_cards += 1
+
+            minutes = MatchEventService._match_duration_for_stats(m)
+            for key in appeared:
+                row = roster_map[key]
+                row.matches_played += 1
+                row.minutes_played += minutes
 
         TeamParticipationPlayer.objects.bulk_update(
             roster_map.values(),
-            ["goals", "assists", "yellow_cards", "red_cards"],
+            [
+                "goals",
+                "assists",
+                "yellow_cards",
+                "red_cards",
+                "matches_played",
+                "minutes_played",
+            ],
         )
 
     @staticmethod
@@ -477,6 +558,7 @@ class MatchEventService:
         match.status = MatchEventService._get_status("match_first_half")
         match.is_penalties = False
         match.save(update_fields=["status", "is_penalties", "updated_at"])
+        MatchEventService.recalculate_player_stats(match=match)
         live_logger.info("match_reopened match_id=%s", match.id)
         MatchEventService.broadcast_match_update(match=match)
         return match

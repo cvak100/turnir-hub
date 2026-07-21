@@ -466,7 +466,12 @@ class PlayerHistoryGenerator:
         if phase is None:
             raise ValidationError({"edition": f"Edicija {year} nima faze."})
 
-        MatchService.generate_placeholder_matches(phase=phase, replace=False)
+        # Only seed TBD slots on a fresh structure. Re-runs often already have
+        # more finished matches than the knockout template expects; calling
+        # generate_placeholder_matches then raises validation_error.
+        if created_edition:
+            MatchService.generate_placeholder_matches(phase=phase, replace=False)
+
         match = (
             phase.matches.filter(
                 home_team_participation__isnull=True,
@@ -479,7 +484,7 @@ class PlayerHistoryGenerator:
         if match is None:
             open_live = [
                 m
-                for m in phase.matches.order_by("id")
+                for m in phase.matches.select_related("status").order_by("id")
                 if not is_finished_match_status(
                     m.status.code if m.status_id else None
                 )
@@ -490,6 +495,8 @@ class PlayerHistoryGenerator:
             match.status.code if match.status_id else None
         ):
             status = MatchService._default_status()
+            if status is None:
+                raise ValidationError({"match": "Ni MatchStatus za novo tekmo."})
             last_num = (
                 phase.matches.order_by("-match_number")
                 .values_list("match_number", flat=True)

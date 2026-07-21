@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ErrorBanner,
@@ -11,6 +11,24 @@ import {
   playerService,
   type PlayerListItem,
 } from "@/modules/players/services/playerService";
+
+function playerMatchesSearch(player: PlayerListItem, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if (String(player.id).includes(q)) return true;
+  const person = player.person;
+  if (!person) return false;
+  const haystack = [
+    person.first_name,
+    person.last_name,
+    person.nickname,
+    formatPersonName(person),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
 
 type GeneratorStep = {
   step: string;
@@ -87,34 +105,49 @@ export function GeneratorAdminPage() {
   const [modeB, setModeB] = useState<"new" | "existing">("new");
   const [playerIdB, setPlayerIdB] = useState("");
   const [playerSearch, setPlayerSearch] = useState("");
-  const [playerOptions, setPlayerOptions] = useState<PlayerListItem[]>([]);
+  const [allPlayers, setAllPlayers] = useState<PlayerListItem[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
+  const [playersError, setPlayersError] = useState<unknown>(null);
 
   useEffect(() => {
     if (modeB !== "existing") return;
     let cancelled = false;
-    const t = window.setTimeout(() => {
-      setPlayersLoading(true);
-      void playerService
-        .list({
-          search: playerSearch.trim() || undefined,
-          page_size: 30,
-        })
-        .then((page) => {
-          if (!cancelled) setPlayerOptions(page.results);
-        })
-        .catch(() => {
-          if (!cancelled) setPlayerOptions([]);
-        })
-        .finally(() => {
-          if (!cancelled) setPlayersLoading(false);
-        });
-    }, 250);
+    setPlayersLoading(true);
+    setPlayersError(null);
+    void playerService
+      .list({ page_size: 100 })
+      .then((page) => {
+        if (!cancelled) setAllPlayers(page.results ?? []);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setAllPlayers([]);
+          setPlayersError(err);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPlayersLoading(false);
+      });
     return () => {
       cancelled = true;
-      window.clearTimeout(t);
     };
-  }, [modeB, playerSearch]);
+  }, [modeB]);
+
+  const playerOptions = useMemo(() => {
+    const filtered = allPlayers.filter((p) =>
+      playerMatchesSearch(p, playerSearch),
+    );
+    const selectedId = Number.parseInt(playerIdB, 10);
+    if (!Number.isFinite(selectedId)) return filtered;
+    if (filtered.some((p) => p.id === selectedId)) return filtered;
+    const selected = allPlayers.find((p) => p.id === selectedId);
+    return selected ? [selected, ...filtered] : filtered;
+  }, [allPlayers, playerSearch, playerIdB]);
+
+  const selectedPlayer = useMemo(
+    () => allPlayers.find((p) => String(p.id) === playerIdB) ?? null,
+    [allPlayers, playerIdB],
+  );
 
   async function runA() {
     setBusyA(true);
@@ -353,28 +386,72 @@ export function GeneratorAdminPage() {
                     <input
                       value={playerSearch}
                       onChange={(e) => setPlayerSearch(e.target.value)}
-                      placeholder="Priimek / ime…"
-                      disabled={busyB}
+                      placeholder="Ime, priimek, vzdevek ali ID…"
+                      disabled={busyB || playersLoading}
+                      autoComplete="off"
                     />
                   </label>
-                  <label>
-                    Igralec
-                    <select
-                      value={playerIdB}
-                      onChange={(e) => setPlayerIdB(e.target.value)}
-                      disabled={busyB || playersLoading}
-                    >
-                      <option value="">
-                        {playersLoading ? "Nalagam…" : "— izberi —"}
-                      </option>
-                      {playerOptions.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          #{p.id} {formatPersonName(p.person)}
-                          {p.position ? ` · ${p.position}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  {playersError ? <ErrorBanner error={playersError} /> : null}
+                  {playersLoading ? (
+                    <p className="muted">Nalagam igralce…</p>
+                  ) : null}
+                  {!playersLoading && selectedPlayer ? (
+                    <p style={{ margin: 0 }}>
+                      Izbran:{" "}
+                      <strong>
+                        #{selectedPlayer.id}{" "}
+                        {formatPersonName(selectedPlayer.person)}
+                      </strong>{" "}
+                      <button
+                        type="button"
+                        className="button-link"
+                        disabled={busyB}
+                        onClick={() => setPlayerIdB("")}
+                      >
+                        Počisti
+                      </button>
+                    </p>
+                  ) : null}
+                  {!playersLoading && playerOptions.length === 0 ? (
+                    <p className="muted">Ni zadetkov.</p>
+                  ) : null}
+                  {!playersLoading && playerOptions.length > 0 ? (
+                    <>
+                      <p className="muted" style={{ margin: 0 }}>
+                        Klikni igralca ({playerOptions.length}
+                        {playerSearch.trim()
+                          ? ` od ${allPlayers.length}`
+                          : ""}
+                        )
+                      </p>
+                      <ul className="live-player-pick-list">
+                        {playerOptions.map((p) => {
+                          const selected = String(p.id) === playerIdB;
+                          return (
+                            <li key={p.id}>
+                              <button
+                                type="button"
+                                className={
+                                  selected
+                                    ? "live-roster-btn live-roster-btn--active border-frame border-frame--sm"
+                                    : "live-roster-btn border-frame border-frame--sm"
+                                }
+                                disabled={busyB}
+                                aria-pressed={selected}
+                                onClick={() => setPlayerIdB(String(p.id))}
+                              >
+                                <span className="live-roster-btn__num">
+                                  #{p.id}
+                                </span>
+                                {formatPersonName(p.person)}
+                                {p.position ? ` · ${p.position}` : ""}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
+                  ) : null}
                 </>
               ) : null}
 

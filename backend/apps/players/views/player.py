@@ -19,7 +19,9 @@ class PlayerViewSet(viewsets.ModelViewSet):
     search_fields = [
         "person__first_name",
         "person__last_name",
+        "person__nickname",
         "nationality",
+        "=id",
     ]
     ordering_fields = ["created_at", "preferred_jersey_number"]
     ordering = ["-created_at"]
