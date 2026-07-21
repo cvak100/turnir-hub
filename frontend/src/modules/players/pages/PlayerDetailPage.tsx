@@ -10,7 +10,10 @@ import { useAuth } from "@/shared/auth";
 import { formatPersonName } from "@/shared/utils/format";
 import { eventLabelWithIcon } from "@/modules/live/eventIcons";
 import { halfDisplayLabel } from "@/modules/live/matchStatuses";
-import { matchEventService } from "@/modules/matches/services/matchService";
+import {
+  matchEventService,
+} from "@/modules/matches/services/matchService";
+import { PlayerCareerChart } from "../components/PlayerCareerChart";
 import {
   participationPlayerService,
   playerService,
@@ -83,6 +86,59 @@ export function PlayerDetailPage() {
       teams: list.length,
     };
   }, [assignments.data]);
+
+  const yearPoints = useMemo(() => {
+    const map = new Map<
+      number,
+      {
+        year: number;
+        matches: number;
+        goals: number;
+        assists: number;
+        yellow: number;
+        red: number;
+      }
+    >();
+    for (const row of assignments.data?.results ?? []) {
+      const year = row.tournament_edition_year;
+      if (year == null) continue;
+      const cur = map.get(year) ?? {
+        year,
+        matches: 0,
+        goals: 0,
+        assists: 0,
+        yellow: 0,
+        red: 0,
+      };
+      cur.matches += row.matches_played ?? 0;
+      cur.goals += row.goals || 0;
+      cur.assists += row.assists || 0;
+      cur.yellow += row.yellow_cards || 0;
+      cur.red += row.red_cards || 0;
+      map.set(year, cur);
+    }
+    return [...map.values()];
+  }, [assignments.data]);
+
+  const matchesByEdition = useMemo(() => {
+    const map = new Map<
+      number,
+      { id: number; label: string }[]
+    >();
+    const seen = new Map<number, Set<number>>();
+    for (const ev of events.data?.results ?? []) {
+      const ed = ev.tournament_edition_id;
+      if (ed == null) continue;
+      if (!seen.has(ed)) seen.set(ed, new Set());
+      if (seen.get(ed)!.has(ev.match)) continue;
+      seen.get(ed)!.add(ev.match);
+      const label = `${ev.home_team_name ?? "?"} vs ${ev.away_team_name ?? "?"}`;
+      const list = map.get(ed) ?? [];
+      list.push({ id: ev.match, label });
+      map.set(ed, list);
+    }
+    return map;
+  }, [events.data]);
 
   if (!Number.isFinite(playerId)) {
     return <StateMessage variant="error" message="Neveljaven igralec." />;
@@ -200,6 +256,16 @@ export function PlayerDetailPage() {
             </div>
           </section>
 
+          {yearPoints.length > 0 ? (
+            <section className="border-frame border-frame--md">
+              <h2>Skozi leta</h2>
+              <p className="muted">
+                Nastopi, goli, asistence in kartoni po letih edicij.
+              </p>
+              <PlayerCareerChart points={yearPoints} />
+            </section>
+          ) : null}
+
           <div className="player-columns">
             <section className="border-frame border-frame--md">
               <h2>Osebni podatki</h2>
@@ -281,44 +347,70 @@ export function PlayerDetailPage() {
             ) : null}
             {(assignments.data?.results.length ?? 0) > 0 ? (
               <ul className="player-history">
-                {(assignments.data?.results ?? []).map((row) => (
-                  <li key={row.id} className="player-history__item">
-                    <div className="player-history__main">
-                      <strong>
-                        {row.participation_name || row.team_name || "Ekipa"}
-                      </strong>
-                      <span className="muted">
-                        {" "}
-                        ·{" "}
-                        {row.tournament_edition_name
-                          ? `${row.tournament_edition_name}${
-                              row.tournament_edition_year
-                                ? ` (${row.tournament_edition_year})`
-                                : ""
-                            }`
-                          : "Edicija"}
-                      </span>
-                    </div>
-                    <div className="player-history__meta muted">
-                      {row.jersey_number != null ? `#${row.jersey_number}` : "—"}
-                      {" · "}
-                      {row.position || "—"}
-                      {row.is_captain ? " · Kapetan" : ""}
-                      {row.is_vice_captain ? " · Podkapetan" : ""}
-                      {" · "}
-                      {row.matches_played ?? 0} tekme · {row.goals}G ·{" "}
-                      {row.assists}A
-                    </div>
-                    {row.tournament_edition_id != null ? (
-                      <Link
-                        className="linkish"
-                        to={`/editions/${row.tournament_edition_id}/players`}
-                      >
-                        Igralci edicije
-                      </Link>
-                    ) : null}
-                  </li>
-                ))}
+                {(assignments.data?.results ?? []).map((row) => {
+                  const editionMatches =
+                    row.tournament_edition_id != null
+                      ? (matchesByEdition.get(row.tournament_edition_id) ?? [])
+                      : [];
+                  return (
+                    <li key={row.id} className="player-history__item">
+                      <div className="player-history__main">
+                        <strong>
+                          {row.participation_name || row.team_name || "Ekipa"}
+                        </strong>
+                        <span className="muted">
+                          {" "}
+                          ·{" "}
+                          {row.tournament_edition_name
+                            ? `${row.tournament_edition_name}${
+                                row.tournament_edition_year
+                                  ? ` (${row.tournament_edition_year})`
+                                  : ""
+                              }`
+                            : "Edicija"}
+                        </span>
+                      </div>
+                      <div className="player-history__meta muted">
+                        {row.jersey_number != null
+                          ? `#${row.jersey_number}`
+                          : "—"}
+                        {" · "}
+                        {row.position || "—"}
+                        {row.is_captain ? " · Kapetan" : ""}
+                        {row.is_vice_captain ? " · Podkapetan" : ""}
+                        {" · "}
+                        {row.matches_played ?? 0} tekme · {row.goals}G ·{" "}
+                        {row.assists}A
+                      </div>
+                      {editionMatches.length > 0 ? (
+                        <ul className="player-history__matches">
+                          {editionMatches.map((m) => (
+                            <li key={m.id}>
+                              <Link
+                                className="linkish"
+                                to={`/matches/${m.id}`}
+                              >
+                                {m.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="muted player-history__matches-empty">
+                          Ni tekem z dogodki.
+                        </p>
+                      )}
+                      {row.tournament_edition_id != null ? (
+                        <Link
+                          className="linkish"
+                          to={`/editions/${row.tournament_edition_id}/matches`}
+                        >
+                          Vse tekme edicije
+                        </Link>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </section>
@@ -333,24 +425,30 @@ export function PlayerDetailPage() {
               <ul className="player-history">
                 {(events.data?.results ?? []).map((ev) => (
                   <li key={ev.id} className="player-history__item">
-                    <div className="player-history__main">
-                      <strong>
-                        {ev.minute}
-                        {ev.extra_minute != null ? `+${ev.extra_minute}` : ""}'
-                      </strong>{" "}
-                      · {halfDisplayLabel(ev.half)} ·{" "}
-                      {eventLabelWithIcon(
-                        ev.event_type.code,
-                        ev.event_type.name,
-                      )}
-                      {ev.is_own_goal ? " (AG)" : ""}
-                    </div>
-                    <div className="player-history__meta muted">
-                      {ev.home_team_name ?? "?"} vs {ev.away_team_name ?? "?"}
-                      {ev.team_name ? ` · ${ev.team_name}` : ""}
-                    </div>
-                    <Link className="linkish" to={`/matches/${ev.match}`}>
-                      Tekma #{ev.match}
+                    <Link
+                      className="player-history__link"
+                      to={`/matches/${ev.match}`}
+                    >
+                      <div className="player-history__main">
+                        <strong>
+                          {ev.minute}
+                          {ev.extra_minute != null
+                            ? `+${ev.extra_minute}`
+                            : ""}
+                          '
+                        </strong>{" "}
+                        · {halfDisplayLabel(ev.half)} ·{" "}
+                        {eventLabelWithIcon(
+                          ev.event_type.code,
+                          ev.event_type.name,
+                        )}
+                        {ev.is_own_goal ? " (AG)" : ""}
+                      </div>
+                      <div className="player-history__meta muted">
+                        {ev.home_team_name ?? "?"} vs{" "}
+                        {ev.away_team_name ?? "?"}
+                        {ev.team_name ? ` · ${ev.team_name}` : ""}
+                      </div>
                     </Link>
                   </li>
                 ))}
