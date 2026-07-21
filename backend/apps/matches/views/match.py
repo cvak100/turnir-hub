@@ -177,6 +177,7 @@ class MatchEventViewSet(viewsets.ModelViewSet):
         "match",
         "event_type",
         "team_participation",
+        "player",
         "half",
         "is_temporary_player",
         "is_own_goal",

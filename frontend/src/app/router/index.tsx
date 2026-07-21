@@ -34,6 +34,7 @@ import { MatchDetailPage } from "@/modules/matches/pages/MatchDetailPage";
 import { MatchEventEditPage } from "@/modules/matches/pages/MatchEventEditPage";
 import { PlayerCreatePage } from "@/modules/players/pages/PlayerCreatePage";
 import { PlayerDetailPage } from "@/modules/players/pages/PlayerDetailPage";
+import { PlayerEditPage } from "@/modules/players/pages/PlayerEditPage";
 import { PlayerListPage } from "@/modules/players/pages/PlayerListPage";
 import { StatsPage } from "@/modules/stats/pages/StatsPage";
 import { TeamCreatePage } from "@/modules/teams/pages/TeamCreatePage";
@@ -167,6 +168,7 @@ export function AppRouter() {
 
             <Route path="/players" element={<PlayerListPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
+            <Route path="/players/:id/edit" element={<PlayerEditPage />} />
 
             <Route path="/matches/:id" element={<MatchDetailPage />} />
             <Route

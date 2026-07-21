@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.core.validators import validate_image_file
 from apps.players.models import Player, PlayerStatus
-from apps.users.serializers import PersonMinimalSerializer
+from apps.users.serializers import PersonMinimalSerializer, PersonPublicSerializer
 
 
 class PlayerStatusSerializer(serializers.ModelSerializer):
@@ -28,7 +28,7 @@ class PlayerListSerializer(serializers.ModelSerializer):
 
 
 class PlayerDetailSerializer(serializers.ModelSerializer):
-    person = PersonMinimalSerializer(read_only=True)
+    person = PersonPublicSerializer(read_only=True)
     status = PlayerStatusSerializer(read_only=True)
 
     class Meta:
@@ -37,10 +37,13 @@ class PlayerDetailSerializer(serializers.ModelSerializer):
             "id",
             "person",
             "position",
+            "secondary_position",
             "preferred_jersey_number",
             "height_cm",
             "weight_kg",
             "dominant_foot",
+            "current_club",
+            "contract_until",
             "nationality",
             "photo",
             "biography",
@@ -65,10 +68,13 @@ class PlayerCreateUpdateSerializer(serializers.ModelSerializer):
         fields = [
             "person",
             "position",
+            "secondary_position",
             "preferred_jersey_number",
             "height_cm",
             "weight_kg",
             "dominant_foot",
+            "current_club",
+            "contract_until",
             "nationality",
             "photo",
             "biography",

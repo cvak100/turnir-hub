@@ -1825,3 +1825,161 @@ input.sketch-check:focus-visible {
   font-size: 1.1rem;
   font-weight: 700;
 }
+
+/* Player profile */
+.player-profile .player-hero {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr;
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.player-hero__media {
+  position: relative;
+}
+
+.player-hero__photo,
+.player-hero__placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+  background: var(--paper-strong);
+}
+
+.player-hero__placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 3rem;
+  font-weight: 700;
+  transform: rotate(-2deg);
+}
+
+.player-hero__jersey {
+  position: absolute;
+  right: -0.35rem;
+  bottom: -0.35rem;
+  padding: 0.15rem 0.45rem;
+  background: var(--paper);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.player-hero__name {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  transform: rotate(-0.5deg);
+}
+
+.player-hero__nick {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.player-hero__meta {
+  margin: 0 0 0.75rem;
+}
+
+.player-hero__bio {
+  margin: 0;
+  max-width: 40rem;
+}
+
+.player-stats__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.player-stat {
+  text-align: center;
+  padding: 0.35rem 0.25rem;
+}
+
+.player-stat__value {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  transform: rotate(-1deg);
+}
+
+.player-stat__label {
+  display: block;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.player-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.player-dl {
+  margin: 0;
+}
+
+.player-dl > div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.35rem 0.75rem;
+  padding: 0.35rem 0;
+}
+
+.player-dl dt {
+  margin: 0;
+  color: #555;
+}
+
+.player-dl dd {
+  margin: 0;
+}
+
+.player-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.player-history__item {
+  padding: 0.65rem 0;
+  position: relative;
+}
+
+.player-history__item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background-image: var(--rule);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.player-history__main {
+  margin-bottom: 0.15rem;
+}
+
+.player-history__meta {
+  margin-bottom: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .player-profile .player-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .player-hero__media {
+    max-width: 10rem;
+  }
+
+  .player-dl > div {
+    grid-template-columns: 1fr;
+  }
+}
