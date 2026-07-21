@@ -98,6 +98,10 @@ class MatchEventService:
         away_id = match.away_team_participation_id
         home = 0
         away = 0
+        home_ht = 0
+        away_ht = 0
+        home_et = 0
+        away_et = 0
         home_pen = 0
         away_pen = 0
 
@@ -105,7 +109,8 @@ class MatchEventService:
         for event in events:
             code = event.event_type.code
             team_id = event.team_participation_id
-            shootout = MatchEventService._is_shootout_half(event.half)
+            half = (event.half or "").strip()
+            shootout = MatchEventService._is_shootout_half(half)
 
             if shootout:
                 if code == "penalty_scored":
@@ -125,27 +130,73 @@ class MatchEventService:
 
             if is_own:
                 if team_id == home_id:
-                    away += 1
+                    scorer_side = "away"
                 elif team_id == away_id:
-                    home += 1
+                    scorer_side = "home"
+                else:
+                    continue
             else:
                 if team_id == home_id:
-                    home += 1
+                    scorer_side = "home"
                 elif team_id == away_id:
-                    away += 1
+                    scorer_side = "away"
+                else:
+                    continue
+
+            if scorer_side == "home":
+                home += 1
+            else:
+                away += 1
+
+            # Half "1" (and legacy empty) → halftime snapshot
+            if half in ("", "1"):
+                if scorer_side == "home":
+                    home_ht += 1
+                else:
+                    away_ht += 1
+            elif half.upper().startswith("ET"):
+                if scorer_side == "home":
+                    home_et += 1
+                else:
+                    away_et += 1
 
         match.home_score = home
         match.away_score = away
+        match.halftime_home_score = home_ht
+        match.halftime_away_score = away_ht
+        match.extra_time_home_score = home_et
+        match.extra_time_away_score = away_et
         match.home_score_penalties = home_pen
         match.away_score_penalties = away_pen
         match.save(
             update_fields=[
                 "home_score",
                 "away_score",
+                "halftime_home_score",
+                "halftime_away_score",
+                "extra_time_home_score",
+                "extra_time_away_score",
                 "home_score_penalties",
                 "away_score_penalties",
                 "updated_at",
             ]
+        )
+        return match
+
+    @staticmethod
+    def refresh_match_from_events(*, match: Match) -> Match:
+        """Recompute scores + player stats from all match events."""
+        MatchEventService.recalculate_match_score(match)
+        MatchEventService.recalculate_player_stats(match=match)
+        match.refresh_from_db()
+        MatchEventService.broadcast_match_update(match=match, event=None)
+        live_logger.info(
+            "match_refreshed_from_events match_id=%s score=%s:%s ht=%s:%s",
+            match.id,
+            match.home_score,
+            match.away_score,
+            match.halftime_home_score,
+            match.halftime_away_score,
         )
         return match
 

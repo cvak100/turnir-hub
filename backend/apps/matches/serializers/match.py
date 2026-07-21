@@ -147,6 +147,26 @@ class MatchCreateUpdateSerializer(serializers.ModelSerializer):
 
 class MatchEventListSerializer(serializers.ModelSerializer):
     event_type = EventTypeSerializer(read_only=True)
+    home_team_name = serializers.CharField(
+        source="match.home_team_participation.participation_name",
+        read_only=True,
+        allow_null=True,
+    )
+    away_team_name = serializers.CharField(
+        source="match.away_team_participation.participation_name",
+        read_only=True,
+        allow_null=True,
+    )
+    team_name = serializers.CharField(
+        source="team_participation.participation_name",
+        read_only=True,
+        allow_null=True,
+    )
+    player_name = serializers.SerializerMethodField()
+    tournament_edition_id = serializers.IntegerField(
+        source="match.tournament_phase.tournament_edition_id",
+        read_only=True,
+    )
 
     class Meta:
         model = MatchEvent
@@ -158,12 +178,27 @@ class MatchEventListSerializer(serializers.ModelSerializer):
             "extra_minute",
             "half",
             "team_participation",
+            "team_name",
+            "home_team_name",
+            "away_team_name",
+            "tournament_edition_id",
             "player",
+            "player_name",
             "is_temporary_player",
             "temporary_player_label",
             "is_penalty",
             "is_own_goal",
+            "created_at",
         ]
+
+    def get_player_name(self, obj: MatchEvent) -> str | None:
+        if obj.is_temporary_player:
+            return obj.temporary_player_label or "Neznani"
+        if obj.player_id and obj.player and obj.player.person_id:
+            person = obj.player.person
+            name = f"{person.last_name} {person.first_name}".strip()
+            return name or person.nickname or f"#{obj.player_id}"
+        return None
 
 
 class MatchEventDetailSerializer(serializers.ModelSerializer):
@@ -200,6 +235,11 @@ class MatchEventDetailSerializer(serializers.ModelSerializer):
 
 class MatchEventCreateUpdateSerializer(serializers.ModelSerializer):
     player = serializers.PrimaryKeyRelatedField(
+        queryset=Player.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    related_player = serializers.PrimaryKeyRelatedField(
         queryset=Player.objects.all(),
         required=False,
         allow_null=True,

@@ -234,6 +234,7 @@ export function EditionMatchesPage() {
   const [halfDuration, setHalfDuration] = useState("");
   const [halfBreak, setHalfBreak] = useState("");
   const [buffer, setBuffer] = useState("");
+  const [showUrnik, setShowUrnik] = useState(false);
   const [ruleMatchDuration, setRuleMatchDuration] = useState<number | null>(
     null,
   );
@@ -385,7 +386,28 @@ export function EditionMatchesPage() {
 
       {canEdit ? (
         <section className="border-frame border-frame--md">
-          <h2>Urnik</h2>
+          <div
+            className="row-actions"
+            style={{
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.65rem",
+              marginBottom: showUrnik ? "0.75rem" : 0,
+            }}
+          >
+            <h2 style={{ margin: 0 }}>Urnik</h2>
+            <button
+              type="button"
+              className="border-frame border-frame--sm"
+              aria-expanded={showUrnik}
+              aria-label={showUrnik ? "Skrij urnik" : "Prikaži urnik"}
+              title={showUrnik ? "Skrij" : "Prikaži"}
+              onClick={() => setShowUrnik((v) => !v)}
+            >
+              {showUrnik ? "−" : "+"}
+            </button>
+          </div>
+          {showUrnik ? (
           <div className="stack-form group-stage-rules">
             <div className="group-stage-rules__grid">
               <label>
@@ -478,6 +500,7 @@ export function EditionMatchesPage() {
               in nastavi ure za vse tekme.
             </p>
           </div>
+          ) : null}
         </section>
       ) : null}
 

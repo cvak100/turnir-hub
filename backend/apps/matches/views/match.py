@@ -47,6 +47,7 @@ class MatchViewSet(viewsets.ModelViewSet):
             "finish": "match.finish",
             "set_penalties": "match.live.manage",
             "set_status": "match.live.manage",
+            "recalculate": "match.live.manage",
         }
         set_action_permission(self, mapping, default="match.manage")
         return [HasMatchPermission()]
@@ -148,6 +149,12 @@ class MatchViewSet(viewsets.ModelViewSet):
         )
         return Response(MatchDetailSerializer(match).data)
 
+    @action(detail=True, methods=["post"])
+    def recalculate(self, request, pk=None):
+        """Rebuild scores (incl. HT/ET/pen) and player stats from events."""
+        match = MatchEventService.refresh_match_from_events(match=self.get_object())
+        return Response(MatchDetailSerializer(match).data)
+
 
 class MatchStatusViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = MatchStatus.objects.filter(is_active=True).order_by("order", "id")
@@ -166,13 +173,30 @@ class EventTypeViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class MatchEventViewSet(viewsets.ModelViewSet):
-    filterset_fields = ["match", "event_type", "team_participation"]
+    filterset_fields = [
+        "match",
+        "event_type",
+        "team_participation",
+        "half",
+        "is_temporary_player",
+        "is_own_goal",
+    ]
     search_fields = [
         "temporary_player_label",
         "player__person__first_name",
         "player__person__last_name",
+        "player__person__nickname",
+        "match__home_team_participation__participation_name",
+        "match__away_team_participation__participation_name",
     ]
-    ordering_fields = ["minute", "created_at", "id"]
+    ordering_fields = [
+        "minute",
+        "extra_minute",
+        "created_at",
+        "id",
+        "half",
+        "match_id",
+    ]
     ordering = ["minute", "id"]
 
     def get_permissions(self):
@@ -193,7 +217,10 @@ class MatchEventViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = MatchEvent.objects.select_related(
             "match",
+            "match__tournament_phase",
             "match__tournament_phase__tournament_edition",
+            "match__home_team_participation",
+            "match__away_team_participation",
             "event_type",
             "team_participation",
             "player",
@@ -204,6 +231,16 @@ class MatchEventViewSet(viewsets.ModelViewSet):
         match_id = self.request.query_params.get("match")
         if match_id:
             qs = qs.filter(match_id=match_id)
+        edition = self.request.query_params.get("tournament_edition")
+        if edition:
+            qs = qs.filter(
+                match__tournament_phase__tournament_edition_id=edition
+            )
+        tournament = self.request.query_params.get("tournament")
+        if tournament:
+            qs = qs.filter(
+                match__tournament_phase__tournament_edition__tournament_id=tournament
+            )
         if not self.request.user.is_authenticated:
             return qs.filter(
                 match__tournament_phase__tournament_edition__is_public=True

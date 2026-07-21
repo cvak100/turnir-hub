@@ -370,6 +370,12 @@ export function TournamentAdminDetailPage() {
         subtitle={data.sport?.name}
         actions={
           <>
+            <Link
+              className="button-link border-frame border-frame--sm"
+              to={`/dashboard_admin/tournaments/${data.id}/events`}
+            >
+              Dogodki
+            </Link>
             {isAdmin ? (
               <Link
                 className="button-link border-frame border-frame--sm"
@@ -471,6 +477,12 @@ export function TournamentAdminDetailPage() {
                         <div className="row-actions">
                           <Link className="linkish" to={`/editions/${ed.id}/phases`}>
                             Faze
+                          </Link>
+                          <Link
+                            className="linkish"
+                            to={`/dashboard_admin/tournaments/${tournamentId}/events?edition=${ed.id}`}
+                          >
+                            Dogodki
                           </Link>
                           <button
                             type="button"

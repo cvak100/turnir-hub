@@ -46,6 +46,7 @@ import {
   useMatchWebSocket,
   type MatchUpdateMessage,
 } from "../hooks/useMatchWebSocket";
+import { ResolveTemporaryPlayerModal } from "../components/ResolveTemporaryPlayerModal";
 import { upsertEventFromWs } from "../services/liveService";
 
 function normalizeList<T>(payload: unknown): T[] {
@@ -108,6 +109,9 @@ export function LiveMatchPage() {
   const [shootoutStarters, setShootoutStarters] = useState("5");
   const [unknownSide, setUnknownSide] = useState<"home" | "away" | null>(null);
   const [unknownLabel, setUnknownLabel] = useState("");
+  const [resolveEvent, setResolveEvent] = useState<MatchEventListItem | null>(
+    null,
+  );
 
   const loadAll = useCallback(async () => {
     const [matchData, eventsData, types, statuses] = await Promise.all([
@@ -477,6 +481,21 @@ export function LiveMatchPage() {
     }
   }
 
+
+  async function refreshFromEvents() {
+    setBusy(true);
+    setActionError(null);
+    try {
+      const updated = await matchService.recalculate(matchId);
+      setMatch(updated);
+      await loadAll();
+    } catch (err) {
+      setActionError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const starters = Number.parseInt(shootoutStarters, 10) || 5;
   const nextKickIndex = shootoutEvents.length + 1;
   const nextKickSide: "home" | "away" =
@@ -490,7 +509,24 @@ export function LiveMatchPage() {
     <div className="page live-edit-page">
       <PageHeader
         title={isLive ? "Live Edit" : isFinished ? "Normal Edit" : "Tekma"}
-        actions={<Link to={`/matches/${matchId}`}>Detail</Link>}
+        actions={
+          <>
+            <button
+              type="button"
+              className="border-frame border-frame--sm"
+              disabled={busy || loading}
+              onClick={() => void refreshFromEvents()}
+            >
+              {busy ? "Osvežujem…" : "Refresh"}
+            </button>
+            <Link
+              className="button-link border-frame border-frame--sm"
+              to={`/matches/${matchId}`}
+            >
+              Detail
+            </Link>
+          </>
+        }
       />
 
       <ErrorBanner error={actionError ?? error} />
@@ -515,6 +551,14 @@ export function LiveMatchPage() {
                   <p className="live-pen-score">
                     pen. {match.home_score_penalties ?? 0}:
                     {match.away_score_penalties ?? 0}
+                  </p>
+                ) : null}
+                {(match.halftime_home_score != null ||
+                  match.halftime_away_score != null) &&
+                !match.is_penalties ? (
+                  <p className="live-pen-score">
+                    polčas {match.halftime_home_score ?? 0}:
+                    {match.halftime_away_score ?? 0}
                   </p>
                 ) : null}
               </div>
@@ -710,7 +754,9 @@ export function LiveMatchPage() {
                   events={homeEvents}
                   labelFor={eventActorLabel}
                   canDelete={canDelete}
+                  canResolveTemp={canEdit}
                   onDelete={deleteEvent}
+                  onResolveTemp={setResolveEvent}
                 />
               </div>
               <div>
@@ -719,7 +765,9 @@ export function LiveMatchPage() {
                   events={awayEvents}
                   labelFor={eventActorLabel}
                   canDelete={canDelete}
+                  canResolveTemp={canEdit}
                   onDelete={deleteEvent}
+                  onResolveTemp={setResolveEvent}
                 />
               </div>
             </div>
@@ -860,6 +908,16 @@ export function LiveMatchPage() {
         </div>
       ) : null}
 
+      <ResolveTemporaryPlayerModal
+        open={resolveEvent != null}
+        event={resolveEvent}
+        editionId={editionId}
+        onClose={() => setResolveEvent(null)}
+        onLinked={() => {
+          void loadAll().catch(setActionError);
+        }}
+      />
+
       <ConfirmEventModal
         open={confirmOpen}
         matchId={matchId}
@@ -883,12 +941,16 @@ function EventList({
   events,
   labelFor,
   canDelete,
+  canResolveTemp,
   onDelete,
+  onResolveTemp,
 }: {
   events: MatchEventListItem[];
   labelFor: (e: MatchEventListItem) => string;
   canDelete: boolean;
+  canResolveTemp: boolean;
   onDelete: (id: number) => void;
+  onResolveTemp: (event: MatchEventListItem) => void;
 }) {
   if (events.length === 0) {
     return <p className="muted">Ni dogodkov.</p>;
@@ -920,7 +982,17 @@ function EventList({
                   {e.extra_minute != null ? `+${e.extra_minute}` : ""}&apos;
                 </strong>{" "}
                 {eventLabelWithIcon(e.event_type.code, e.event_type.name)}{" "}
-                {labelFor(e)}
+                {e.is_temporary_player && canResolveTemp ? (
+                  <button
+                    type="button"
+                    className="linkish"
+                    onClick={() => onResolveTemp(e)}
+                  >
+                    {labelFor(e)}
+                  </button>
+                ) : (
+                  labelFor(e)
+                )}
                 {e.is_own_goal ? " (AG)" : ""}
                 {canDelete ? (
                   <>

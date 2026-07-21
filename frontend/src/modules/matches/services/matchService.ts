@@ -88,11 +88,17 @@ export interface MatchEventListItem {
   extra_minute: number | null;
   half: string;
   team_participation: number;
+  team_name?: string | null;
+  home_team_name?: string | null;
+  away_team_name?: string | null;
+  tournament_edition_id?: number;
   player: number | null;
+  player_name?: string | null;
   is_temporary_player: boolean;
   temporary_player_label: string;
   is_penalty: boolean;
   is_own_goal: boolean;
+  created_at?: string;
 }
 
 export interface MatchEventDetail extends MatchEventListItem {
@@ -118,10 +124,17 @@ export type MatchEventInput = {
   extra_minute?: number | null;
   player?: number | null;
   related_player?: number | null;
+  goal_type?: string;
+  body_part?: string;
+  is_penalty?: boolean;
+  is_own_goal?: boolean;
+  is_var_decision?: boolean;
+  var_result?: string;
+  description?: string;
+  score_home_at_event?: number | null;
+  score_away_at_event?: number | null;
   is_temporary_player?: boolean;
   temporary_player_label?: string;
-  is_own_goal?: boolean;
-  description?: string;
   notes?: string;
 };
 
@@ -296,6 +309,10 @@ export const matchService = {
     return api.post<MatchDetail>(`/matches/${id}/finish/`);
   },
 
+  recalculate(id: number) {
+    return api.post<MatchDetail>(`/matches/${id}/recalculate/`);
+  },
+
   setStatus(id: number, statusCode: string) {
     return api.post<MatchDetail>(`/matches/${id}/set-status/`, {
       status_code: statusCode,
@@ -332,6 +349,10 @@ export const matchEventService = {
       params,
       auth: false,
     });
+  },
+
+  get(id: number) {
+    return api.get<MatchEventDetail>(`/match-events/${id}/`);
   },
 
   create(data: MatchEventInput) {

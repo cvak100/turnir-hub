@@ -112,6 +112,9 @@ export function EditionDetailPage() {
           <li>
             <Link to={`/editions/${editionId}/matches`}>Matches</Link>
           </li>
+          <li>
+            <Link to={`/editions/${editionId}/events`}>Dogodki</Link>
+          </li>
         </ul>
       </section>
     </div>

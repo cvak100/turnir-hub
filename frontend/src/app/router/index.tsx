@@ -12,6 +12,7 @@ import { TeamAdminDetailPage } from "@/modules/admin/pages/TeamDetailPage";
 import { TeamFormPage } from "@/modules/admin/pages/TeamFormPage";
 import { TeamsAdminPage } from "@/modules/admin/pages/TeamsAdminPage";
 import { TournamentAdminDetailPage } from "@/modules/admin/pages/TournamentDetailPage";
+import { TournamentEventsAdminPage } from "@/modules/admin/pages/TournamentEventsAdminPage";
 import { TournamentAdminFormPage } from "@/modules/admin/pages/TournamentFormPage";
 import { TournamentsAdminPage } from "@/modules/admin/pages/TournamentsAdminPage";
 import { AccountPage } from "@/modules/account/pages/AccountPage";
@@ -20,6 +21,7 @@ import { UnauthorizedPage } from "@/modules/auth/pages/UnauthorizedPage";
 import { DashboardPage } from "@/modules/dashboard/pages/DashboardPage";
 import { EditionDetailPage } from "@/modules/editions/pages/EditionDetailPage";
 import { EditionEditPage } from "@/modules/editions/pages/EditionEditPage";
+import { EditionEventsPage } from "@/modules/editions/pages/EditionEventsPage";
 import { EditionMatchesPage } from "@/modules/editions/pages/EditionMatchesPage";
 import { EditionPhasesPage } from "@/modules/editions/pages/EditionPhasesPage";
 import { EditionPlayersPage } from "@/modules/editions/pages/EditionPlayersPage";
@@ -29,6 +31,7 @@ import { LiveIndexPage } from "@/modules/live/pages/LiveIndexPage";
 import { LiveMatchPage } from "@/modules/live/pages/LiveMatchPage";
 import { ManagePage } from "@/modules/manage/pages/ManagePage";
 import { MatchDetailPage } from "@/modules/matches/pages/MatchDetailPage";
+import { MatchEventEditPage } from "@/modules/matches/pages/MatchEventEditPage";
 import { PlayerCreatePage } from "@/modules/players/pages/PlayerCreatePage";
 import { PlayerDetailPage } from "@/modules/players/pages/PlayerDetailPage";
 import { PlayerListPage } from "@/modules/players/pages/PlayerListPage";
@@ -110,6 +113,10 @@ export function AppRouter() {
                   element={<TournamentAdminDetailPage />}
                 />
                 <Route
+                  path="/dashboard_admin/tournaments/:id/events"
+                  element={<TournamentEventsAdminPage />}
+                />
+                <Route
                   path="/dashboard_admin/tournaments/:id/edit"
                   element={<TournamentAdminFormPage mode="edit" />}
                 />
@@ -150,6 +157,10 @@ export function AppRouter() {
               path="/editions/:id/matches"
               element={<EditionMatchesPage />}
             />
+            <Route
+              path="/editions/:id/events"
+              element={<EditionEventsPage />}
+            />
 
             <Route path="/teams" element={<TeamListPage />} />
             <Route path="/teams/:id" element={<TeamDetailPage />} />
@@ -158,6 +169,10 @@ export function AppRouter() {
             <Route path="/players/:id" element={<PlayerDetailPage />} />
 
             <Route path="/matches/:id" element={<MatchDetailPage />} />
+            <Route
+              path="/match-events/:eventId/edit"
+              element={<MatchEventEditPage />}
+            />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
