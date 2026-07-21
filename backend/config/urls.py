@@ -9,7 +9,10 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from apps.core.views.generator import DemoTournamentGeneratorView
+from apps.core.views.generator import (
+    DemoTournamentGeneratorView,
+    PlayerHistoryGeneratorView,
+)
 from apps.core.views.health import HealthView
 from apps.users.views.auth import MeView, MyPermissionsView
 
@@ -26,6 +29,11 @@ urlpatterns = [
         "api/v1/admin/generator/demo-tournament/",
         DemoTournamentGeneratorView.as_view(),
         name="admin-generator-demo-tournament",
+    ),
+    path(
+        "api/v1/admin/generator/player-history/",
+        PlayerHistoryGeneratorView.as_view(),
+        name="admin-generator-player-history",
     ),
     path("api/v1/", include("apps.tournaments.urls")),
     path("api/v1/", include("apps.players.urls")),

@@ -23,7 +23,7 @@ const ADMIN_MODULES = [
   {
     id: "generator",
     label: "Generator",
-    description: "Demo flow: Trojke turnir z ekipami, fazami in simulacijo.",
+    description: "Generator A (turnir) in B (zgodovina igralca).",
     path: "/dashboard_admin/generator",
   },
 ] as const;
