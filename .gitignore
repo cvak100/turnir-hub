@@ -40,3 +40,7 @@ htmlcov/
 
 # Docker
 postgres_data/
+
+# Local portable Node (start-dev.bat fallback)
+tools/node/
+tools/node-*.zip

@@ -6,6 +6,7 @@ export const Permissions = {
   MatchLiveManage: "match.live.manage",
   MatchEventAdd: "match.event.add",
   MatchEventEdit: "match.event.edit",
+  MatchEventDelete: "match.event.delete",
   MatchFinish: "match.finish",
   TeamManage: "team.manage",
   TeamParticipationManage: "team.participation.manage",

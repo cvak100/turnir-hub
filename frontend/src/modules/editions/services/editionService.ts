@@ -93,7 +93,9 @@ export interface EditionDetail {
     max_players_on_roster?: number | null;
     match_duration_minutes?: number | null;
     half_time_duration_minutes?: number | null;
+    number_of_halves?: number | null;
     allow_extra_time?: boolean;
+    extra_time_minutes?: number | null;
     allow_penalties?: boolean;
     offside_rule?: boolean;
   } | null;

@@ -11,6 +11,10 @@ import {
   matchService,
   phaseService,
 } from "../services/matchService";
+import {
+  isFinishedMatchStatus,
+  isLiveMatchStatus,
+} from "@/modules/live/matchStatuses";
 
 export function MatchDetailPage() {
   const { id } = useParams();
@@ -84,7 +88,9 @@ export function MatchDetailPage() {
               </li>
             ) : null}
           </ul>
-          {canStart && match.data.status?.code !== "live" && match.data.status?.code !== "finished" ? (
+          {canStart &&
+          !isLiveMatchStatus(match.data.status?.code) &&
+          !isFinishedMatchStatus(match.data.status?.code) ? (
             <button type="button" className="border-frame border-frame--sm" onClick={() => void startMatch()} disabled={busy}>
               {busy ? "Starting…" : "Start match"}
             </button>

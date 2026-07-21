@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 
 from apps.matches.models import MatchStatus
+from apps.matches.status_codes import MATCH_STATUS_ROWS
 from apps.players.models import PlayerStatus, TeamStatus
 from apps.tournaments.models import TournamentStatus
 from apps.users.models import PersonStatus
@@ -29,13 +30,7 @@ STATUSES = {
         ("Injured", "injured", "#f59e0b", 2),
         ("Inactive", "inactive", "#94a3b8", 3),
     ],
-    MatchStatus: [
-        ("Scheduled", "scheduled", "#3b82f6", 1),
-        ("Live", "live", "#ef4444", 2),
-        ("Finished", "finished", "#64748b", 3),
-        ("Postponed", "postponed", "#f59e0b", 4),
-        ("Cancelled", "cancelled", "#94a3b8", 5),
-    ],
+    MatchStatus: MATCH_STATUS_ROWS,
 }
 
 

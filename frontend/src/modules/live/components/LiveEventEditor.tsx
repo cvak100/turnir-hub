@@ -1,286 +1,390 @@
-﻿import { type FormEvent, useEffect, useState } from "react";
-import { ErrorBanner } from "@/shared/components";
+﻿import { useEffect, useMemo, useState } from "react";
+import { ErrorBanner, IntegerStepper } from "@/shared/components";
 import {
   matchEventService,
+  type EventTypeRef,
   type MatchEventInput,
-  type MatchEventListItem,
 } from "@/modules/matches/services/matchService";
+import { eventLabelWithIcon } from "../eventIcons";
+import { halfDisplayLabel, halfSortKey } from "../matchStatuses";
+
+export type SelectedActor = {
+  teamParticipationId: number;
+  side: "home" | "away";
+  playerId: number | null;
+  isTemporary: boolean;
+  label: string;
+  displayName: string;
+};
 
 type Props = {
+  open: boolean;
   matchId: number;
-  homeParticipationId: number | null;
-  awayParticipationId: number | null;
-  canAdd: boolean;
-  canEdit: boolean;
-  events: MatchEventListItem[];
-  onChanged: () => void;
+  eventType: EventTypeRef | null;
+  actor: SelectedActor | null;
+  suggestedMinute: number;
+  half: string;
+  onClose: () => void;
+  onSaved: () => void;
 };
 
-const emptyForm = {
-  event_type: "",
-  team_participation: "",
-  minute: "",
-  extra_minute: "",
-  half: "1",
-  player: "",
-  related_player: "",
-  is_temporary_player: false,
-  temporary_player_label: "",
-  is_own_goal: false,
-  notes: "",
-};
-
-export function LiveEventEditor({
+export function ConfirmEventModal({
+  open,
   matchId,
-  homeParticipationId,
-  awayParticipationId,
-  canAdd,
-  canEdit,
-  events,
-  onChanged,
+  eventType,
+  actor,
+  suggestedMinute,
+  half,
+  onClose,
+  onSaved,
 }: Props) {
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [minute, setMinute] = useState(String(suggestedMinute));
+  const [extraMinute, setExtraMinute] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    if (editingId == null) return;
-    const event = events.find((item) => item.id === editingId);
-    if (!event) return;
-    setForm({
-      event_type: String(event.event_type.id || ""),
-      team_participation: String(event.team_participation),
-      minute: String(event.minute),
-      extra_minute:
-        event.extra_minute == null ? "" : String(event.extra_minute),
-      half: event.half || "1",
-      player: event.player == null ? "" : String(event.player),
-      related_player: "",
-      is_temporary_player: event.is_temporary_player,
-      temporary_player_label: event.temporary_player_label ?? "",
-      is_own_goal: event.is_own_goal,
-      notes: "",
-    });
-  }, [editingId, events]);
+    if (!open) return;
+    setMinute(String(Math.max(1, suggestedMinute || 1)));
+    setExtraMinute("");
+    setError(null);
+  }, [open, suggestedMinute, eventType?.id, actor?.displayName]);
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (!canAdd && editingId == null) return;
-    if (!canEdit && editingId != null) return;
+  if (!open || !eventType || !actor) return null;
 
-    setSubmitting(true);
+  const halfLabel = halfDisplayLabel(half);
+
+  async function submit() {
+    setBusy(true);
     setError(null);
     try {
       const payload: MatchEventInput = {
         match: matchId,
-        event_type: Number(form.event_type),
-        team_participation: Number(form.team_participation),
-        minute: Number(form.minute),
-        half: form.half,
+        event_type: eventType!.id,
+        team_participation: actor!.teamParticipationId,
+        minute: Math.max(1, Number.parseInt(minute, 10) || 1),
         extra_minute:
-          form.extra_minute.trim() === "" ? null : Number(form.extra_minute),
-        player: form.player.trim() === "" ? null : Number(form.player),
-        related_player:
-          form.related_player.trim() === ""
-            ? null
-            : Number(form.related_player),
-        is_temporary_player: form.is_temporary_player,
-        temporary_player_label: form.temporary_player_label,
-        is_own_goal: form.is_own_goal,
-        notes: form.notes,
+          extraMinute.trim() === "" ? null : Number.parseInt(extraMinute, 10),
+        half,
+        player: actor!.isTemporary ? null : actor!.playerId,
+        is_temporary_player: actor!.isTemporary,
+        temporary_player_label: actor!.isTemporary ? actor!.label : "",
+        is_own_goal: eventType!.code === "own_goal",
       };
-
-      if (editingId != null) {
-        await matchEventService.update(editingId, payload);
-      } else {
-        await matchEventService.create(payload);
-      }
-      setForm(emptyForm);
-      setEditingId(null);
-      onChanged();
+      await matchEventService.create(payload);
+      onSaved();
+      onClose();
     } catch (err) {
       setError(err);
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
   }
 
-  if (!canAdd && !canEdit) return null;
-
   return (
-    <section className="border-frame border-frame--md">
-      <h2>{editingId != null ? "Edit event" : "Add event"}</h2>
-      <p className="muted">
-        Event type is a numeric id (no event-types list endpoint in this phase).
-        Common codes map to backend EventType rows.
-      </p>
-      <ErrorBanner error={error} />
-      <form className="stack-form border-frame border-frame--md" onSubmit={onSubmit}>
-        <label>
-          Event type id
-          <input
-            type="number"
-            value={form.event_type}
-            onChange={(e) => setForm({ ...form, event_type: e.target.value })}
-            required
-          />
-        </label>
-        <label>
-          Team participation
-          <select
-            value={form.team_participation}
-            onChange={(e) =>
-              setForm({ ...form, team_participation: e.target.value })
-            }
-            required
-          >
-            <option value="">Select…</option>
-            {homeParticipationId != null ? (
-              <option value={homeParticipationId}>
-                Home ({homeParticipationId})
-              </option>
-            ) : null}
-            {awayParticipationId != null ? (
-              <option value={awayParticipationId}>
-                Away ({awayParticipationId})
-              </option>
-            ) : null}
-          </select>
-        </label>
-        <label>
-          Minute
-          <input
-            type="number"
-            value={form.minute}
-            onChange={(e) => setForm({ ...form, minute: e.target.value })}
-            required
-          />
-        </label>
-        <label>
-          Extra minute
-          <input
-            type="number"
-            value={form.extra_minute}
-            onChange={(e) => setForm({ ...form, extra_minute: e.target.value })}
-          />
-        </label>
-        <label>
-          Half
-          <input
-            value={form.half}
-            onChange={(e) => setForm({ ...form, half: e.target.value })}
-          />
-        </label>
-        <label>
-          Player id (optional)
-          <input
-            type="number"
-            value={form.player}
-            onChange={(e) => setForm({ ...form, player: e.target.value })}
-            disabled={form.is_temporary_player}
-          />
-        </label>
-        <label>
-          Related player id
-          <input
-            type="number"
-            value={form.related_player}
-            onChange={(e) =>
-              setForm({ ...form, related_player: e.target.value })
-            }
-          />
-        </label>
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={form.is_temporary_player}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                is_temporary_player: e.target.checked,
-                player: e.target.checked ? "" : form.player,
-              })
-            }
-          />
-          Temporary player
-        </label>
-        {form.is_temporary_player ? (
+    <div className="live-modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="live-modal border-frame border-frame--md"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3>Potrdi dogodek</h3>
+        <p>
+          <strong>
+            {eventLabelWithIcon(eventType.code, eventType.name)}
+          </strong>
+          {" · "}
+          {actor.displayName}
+          {" · "}
+          {actor.side === "home" ? "Domači" : "Gostje"}
+          {" · "}
+          <span className="muted">{halfLabel}</span>
+        </p>
+        <ErrorBanner error={error} />
+        <div className="stack-form">
           <label>
-            Temporary player label
-            <input
-              value={form.temporary_player_label}
-              onChange={(e) =>
-                setForm({ ...form, temporary_player_label: e.target.value })
-              }
-              placeholder="e.g. Unknown #9"
-              required
+            Minuta ({halfLabel})
+            <IntegerStepper
+              value={minute}
+              min={1}
+              max={half === "penalties" ? 50 : 130}
+              emptyMeansNull={false}
+              onChange={setMinute}
             />
           </label>
-        ) : null}
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={form.is_own_goal}
-            onChange={(e) =>
-              setForm({ ...form, is_own_goal: e.target.checked })
-            }
-          />
-          Own goal
-        </label>
-        <label>
-          Notes / description
-          <textarea
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-            rows={2}
-          />
-        </label>
-        <div className="row-actions">
-          <button type="submit" className="border-frame border-frame--sm" disabled={submitting}>
-            {submitting
-              ? "Saving…"
-              : editingId != null
-                ? "Save correction"
-                : "Add event"}
-          </button>
-          {editingId != null ? (
+          {half !== "penalties" ? (
+            <label>
+              Dodatek (extra)
+              <IntegerStepper
+                value={extraMinute}
+                min={0}
+                max={30}
+                emptyMeansNull
+                onChange={setExtraMinute}
+              />
+            </label>
+          ) : null}
+          <div className="row-actions">
+            <button
+              type="button"
+              className="border-frame border-frame--sm"
+              disabled={busy}
+              onClick={() => void submit()}
+            >
+              {busy ? "Shranjujem…" : "Potrdi"}
+            </button>
             <button
               type="button"
               className="button-secondary border-frame border-frame--sm"
-              onClick={() => {
-                setEditingId(null);
-                setForm(emptyForm);
-              }}
+              disabled={busy}
+              onClick={onClose}
             >
-              Cancel edit
+              Prekliči
             </button>
-          ) : null}
+          </div>
         </div>
-      </form>
-
-      {canEdit ? (
-        <div className="edit-event-picker">
-          <h3>Correct temporary / existing event</h3>
-          <ul className="plain-list">
-            {events.map((item) => (
-              <li key={item.id}>
-                #{item.id} {item.minute}&apos; {item.event_type.code}
-                {item.is_temporary_player
-                  ? ` · temp: ${item.temporary_player_label}`
-                  : ""}{" "}
-                <button
-                  type="button"
-                  className="linkish"
-                  onClick={() => setEditingId(item.id)}
-                >
-                  Edit
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </section>
+      </div>
+    </div>
   );
+}
+
+const PRIMARY_CODES = new Set([
+  "goal",
+  "yellow_card",
+  "red_card",
+  "substitution_in",
+  "substitution_out",
+  "penalty_scored",
+  "own_goal",
+  "assist",
+]);
+
+export function isPrimaryEventType(code: string): boolean {
+  return PRIMARY_CODES.has(code);
+}
+
+export function sortEventsForTimeline<
+  T extends {
+    minute: number;
+    extra_minute: number | null;
+    id: number;
+    half?: string;
+  },
+>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const ha = halfSortKey(a.half);
+    const hb = halfSortKey(b.half);
+    if (ha !== hb) return ha - hb;
+    if (a.minute !== b.minute) return a.minute - b.minute;
+    const ae = a.extra_minute ?? 0;
+    const be = b.extra_minute ?? 0;
+    if (ae !== be) return ae - be;
+    return a.id - b.id;
+  });
+}
+
+export function playerLabel(person: {
+  first_name?: string;
+  last_name?: string;
+  nickname?: string;
+}): string {
+  const name = [person.last_name, person.first_name].filter(Boolean).join(" ");
+  if (name) return name;
+  return person.nickname || "Igralec";
+}
+
+type ClockPersisted = {
+  baseElapsed: number;
+  running: boolean;
+  startedAt: number | null;
+};
+
+function clockKey(matchId: number, half: string) {
+  return `turnirhub.live-clock.${matchId}.${half}`;
+}
+
+function readClock(matchId: number, half: string): ClockPersisted | null {
+  try {
+    const raw = localStorage.getItem(clockKey(matchId, half));
+    if (!raw) return null;
+    return JSON.parse(raw) as ClockPersisted;
+  } catch {
+    return null;
+  }
+}
+
+function writeClock(matchId: number, half: string, state: ClockPersisted) {
+  try {
+    localStorage.setItem(clockKey(matchId, half), JSON.stringify(state));
+  } catch {
+    // ignore
+  }
+}
+
+function elapsedNow(state: ClockPersisted): number {
+  if (state.running && state.startedAt != null) {
+    return Math.max(
+      0,
+      state.baseElapsed + Math.floor((Date.now() - state.startedAt) / 1000),
+    );
+  }
+  return Math.max(0, state.baseElapsed);
+}
+
+/** 0:00–0:59 → 1′, 1:00–1:59 → 2′, … capped at maxMinutes. */
+function periodMinuteFromElapsed(
+  elapsedSec: number,
+  maxMinutes: number | null,
+): number {
+  let minute = Math.floor(Math.max(0, elapsedSec) / 60) + 1;
+  if (maxMinutes != null && maxMinutes > 0) {
+    minute = Math.min(minute, maxMinutes);
+  }
+  return Math.max(1, minute);
+}
+
+/** Informative match clock — survives refresh via localStorage.
+ *  Caps at maxMinutes (rules) and auto-pauses when reached. */
+export function useMatchClock(
+  matchId: number,
+  half: string,
+  maxMinutes: number | null = null,
+) {
+  const [tick, setTick] = useState(0);
+  const [version, setVersion] = useState(0);
+
+  const maxSeconds =
+    maxMinutes != null && maxMinutes > 0 ? Math.floor(maxMinutes * 60) : null;
+
+  const state = useMemo((): ClockPersisted => {
+    if (!Number.isFinite(matchId)) {
+      return { baseElapsed: 0, running: false, startedAt: null };
+    }
+    return (
+      readClock(matchId, half) ?? {
+        baseElapsed: 0,
+        running: false,
+        startedAt: null,
+      }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, half, version, tick]);
+
+  const rawElapsed = elapsedNow(state);
+  const elapsedSec =
+    maxSeconds != null ? Math.min(rawElapsed, maxSeconds) : rawElapsed;
+  const atMax = maxSeconds != null && elapsedSec >= maxSeconds;
+
+  useEffect(() => {
+    if (!state.running) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [state.running, matchId, half]);
+
+  useEffect(() => {
+    if (!state.running || maxSeconds == null) return;
+    if (rawElapsed < maxSeconds) return;
+    writeClock(matchId, half, {
+      baseElapsed: maxSeconds,
+      running: false,
+      startedAt: null,
+    });
+    setVersion((v) => v + 1);
+  }, [rawElapsed, maxSeconds, state.running, matchId, half]);
+
+  const suggestedMinute = useMemo(() => {
+    if (half === "penalties") return 1;
+    return periodMinuteFromElapsed(elapsedSec, maxMinutes);
+  }, [elapsedSec, half, maxMinutes]);
+
+  const clockLabel = useMemo(() => {
+    const m = Math.floor(elapsedSec / 60);
+    const s = elapsedSec % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }, [elapsedSec]);
+
+  function persist(next: ClockPersisted) {
+    const capped =
+      maxSeconds != null
+        ? {
+            ...next,
+            baseElapsed: Math.min(next.baseElapsed, maxSeconds),
+            running:
+              next.running &&
+              !(maxSeconds != null && next.baseElapsed >= maxSeconds),
+            startedAt:
+              next.running &&
+              !(maxSeconds != null && next.baseElapsed >= maxSeconds)
+                ? next.startedAt
+                : null,
+          }
+        : next;
+    writeClock(matchId, half, capped);
+    setVersion((v) => v + 1);
+  }
+
+  /** Fresh read from storage — use when opening the event confirm dialog. */
+  function minuteFromTimer(): number {
+    if (half === "penalties") return 1;
+    if (!Number.isFinite(matchId)) return 1;
+    const saved = readClock(matchId, half) ?? {
+      baseElapsed: 0,
+      running: false,
+      startedAt: null,
+    };
+    let sec = elapsedNow(saved);
+    if (maxSeconds != null) sec = Math.min(sec, maxSeconds);
+    return periodMinuteFromElapsed(sec, maxMinutes);
+  }
+
+  return {
+    running: state.running && !atMax,
+    atMax,
+    maxMinutes,
+    clockLabel,
+    suggestedMinute,
+    minuteFromTimer,
+    elapsedSec,
+    start: () => {
+      if (atMax || (maxSeconds != null && elapsedNow(
+        readClock(matchId, half) ?? {
+          baseElapsed: 0,
+          running: false,
+          startedAt: null,
+        },
+      ) >= maxSeconds)) {
+        return;
+      }
+      const current = elapsedNow(
+        readClock(matchId, half) ?? {
+          baseElapsed: 0,
+          running: false,
+          startedAt: null,
+        },
+      );
+      persist({
+        baseElapsed: current,
+        running: true,
+        startedAt: Date.now(),
+      });
+    },
+    pause: () => {
+      const current = elapsedNow(
+        readClock(matchId, half) ?? {
+          baseElapsed: 0,
+          running: false,
+          startedAt: null,
+        },
+      );
+      persist({
+        baseElapsed: maxSeconds != null ? Math.min(current, maxSeconds) : current,
+        running: false,
+        startedAt: null,
+      });
+    },
+    reset: () => {
+      persist({ baseElapsed: 0, running: false, startedAt: null });
+    },
+  };
 }

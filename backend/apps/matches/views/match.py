@@ -4,14 +4,16 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.utils import scope_queryset_to_editions
-from apps.matches.models import Match, MatchEvent
+from apps.matches.models import EventType, Match, MatchEvent, MatchStatus
 from apps.matches.serializers.match import (
+    EventTypeSerializer,
     MatchCreateUpdateSerializer,
     MatchDetailSerializer,
     MatchEventCreateUpdateSerializer,
     MatchEventDetailSerializer,
     MatchEventListSerializer,
     MatchListSerializer,
+    MatchStatusSerializer,
 )
 from apps.matches.services.match import MatchEventService, MatchService
 from apps.users.permissions import HasMatchPermission
@@ -41,7 +43,10 @@ class MatchViewSet(viewsets.ModelViewSet):
             "partial_update": "match.result.edit",
             "destroy": "match.manage",
             "start": "match.live.manage",
+            "reopen": "match.live.manage",
             "finish": "match.finish",
+            "set_penalties": "match.live.manage",
+            "set_status": "match.live.manage",
         }
         set_action_permission(self, mapping, default="match.manage")
         return [HasMatchPermission()]
@@ -105,9 +110,59 @@ class MatchViewSet(viewsets.ModelViewSet):
         return Response(MatchDetailSerializer(match).data)
 
     @action(detail=True, methods=["post"])
+    def reopen(self, request, pk=None):
+        """Finished → live again (so Live Edit can continue)."""
+        match = MatchEventService.reopen_match(match=self.get_object())
+        return Response(MatchDetailSerializer(match).data)
+
+    @action(detail=True, methods=["post"])
     def finish(self, request, pk=None):
         match = MatchEventService.finish_match(match=self.get_object())
         return Response(MatchDetailSerializer(match).data)
+
+    @action(detail=True, methods=["post"], url_path="set-status")
+    def set_status(self, request, pk=None):
+        """Set match status to a tournament-template code (1st half, HT, …)."""
+        code = request.data.get("status_code") or request.data.get("code")
+        if not code:
+            return Response(
+                {"status_code": ["Required."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        match = MatchEventService.set_match_status(
+            match=self.get_object(),
+            status_code=str(code),
+        )
+        return Response(MatchDetailSerializer(match).data)
+
+    @action(detail=True, methods=["post"], url_path="set-penalties")
+    def set_penalties(self, request, pk=None):
+        """Toggle penalty shootout — prefer set-status=match_penalties."""
+        enabled = request.data.get("enabled", True)
+        if isinstance(enabled, str):
+            enabled = enabled.lower() in ("1", "true", "yes")
+        code = "match_penalties" if enabled else "match_second_half"
+        match = MatchEventService.set_match_status(
+            match=self.get_object(),
+            status_code=code,
+        )
+        return Response(MatchDetailSerializer(match).data)
+
+
+class MatchStatusViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = MatchStatus.objects.filter(is_active=True).order_by("order", "id")
+    serializer_class = MatchStatusSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+
+class EventTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    """List existing EventType rows for Live / Normal Edit action buttons."""
+
+    queryset = EventType.objects.filter(is_active=True).order_by("order", "id")
+    serializer_class = EventTypeSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
 
 
 class MatchEventViewSet(viewsets.ModelViewSet):

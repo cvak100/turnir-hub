@@ -2,14 +2,16 @@
 import { PageHeader, StateMessage } from "@/shared/components";
 import { useAsyncData } from "@/shared/hooks/useAsyncData";
 import { matchService } from "@/modules/matches/services/matchService";
+import { isLiveMatchStatus } from "../matchStatuses";
 
 export function LiveIndexPage() {
   const list = useAsyncData(async () => {
     const page = await matchService.list({ page_size: 50 });
+    const live = page.results.filter((m) => isLiveMatchStatus(m.status?.code));
     return {
       ...page,
-      results: page.results.filter((m) => m.status?.code === "live"),
-      count: page.results.filter((m) => m.status?.code === "live").length,
+      results: live,
+      count: live.length,
     };
   }, []);
 

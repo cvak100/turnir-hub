@@ -271,8 +271,41 @@ export const matchService = {
     return api.post<MatchDetail>(`/matches/${id}/start/`);
   },
 
+  reopen(id: number) {
+    return api.post<MatchDetail>(`/matches/${id}/reopen/`);
+  },
+
   finish(id: number) {
     return api.post<MatchDetail>(`/matches/${id}/finish/`);
+  },
+
+  setStatus(id: number, statusCode: string) {
+    return api.post<MatchDetail>(`/matches/${id}/set-status/`, {
+      status_code: statusCode,
+    });
+  },
+
+  setPenalties(id: number, enabled = true) {
+    return api.post<MatchDetail>(`/matches/${id}/set-penalties/`, { enabled });
+  },
+};
+
+export type MatchStatusItem = {
+  id: number;
+  name: string;
+  code: string;
+  color: string;
+};
+
+export const matchStatusService = {
+  list() {
+    return api.get<MatchStatusItem[]>("/match-statuses/", { auth: false });
+  },
+};
+
+export const eventTypeService = {
+  list() {
+    return api.get<EventTypeRef[]>("/event-types/", { auth: false });
   },
 };
 
@@ -301,5 +334,9 @@ export const matchEventService = {
       ...(notes !== undefined ? { description: notes } : {}),
     };
     return api.patch<MatchEventDetail>(`/match-events/${id}/`, body);
+  },
+
+  delete(id: number) {
+    return api.delete<void>(`/match-events/${id}/`);
   },
 };

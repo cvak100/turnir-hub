@@ -20,7 +20,7 @@ export function upsertEventFromWs(
     },
     minute: incoming.minute,
     extra_minute: incoming.extra_minute,
-    half: "",
+    half: incoming.half ?? "",
     team_participation: incoming.team_participation_id,
     player: incoming.player_id,
     is_temporary_player: incoming.is_temporary_player,
