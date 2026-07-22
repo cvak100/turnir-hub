@@ -498,11 +498,11 @@ input.sketch-check:hover {
 
 .checkbox-row input[type="checkbox"]:checked,
 input.sketch-check:checked {
-  border-color: var(--blue) !important;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 8.5 L6.5 12 L13 4' fill='none' stroke='blue' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  border-color: var(--ink) !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='4.2' fill='%23333'/></svg>");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 75% 75%;
+  background-size: 100% 100%;
 }
 
 .checkbox-row input[type="checkbox"]:focus-visible,
@@ -566,7 +566,8 @@ input.sketch-check:focus-visible {
   background-image: var(--rule-blue);
 }
 
-.data-table input {
+/* Text/number inputs in cells — not checkboxes (those stay compact). */
+.data-table input:not([type="checkbox"]):not([type="radio"]) {
   width: 100%;
   min-width: 8rem;
   padding: 8px 4px;
@@ -583,8 +584,22 @@ input.sketch-check:focus-visible {
   background-size: 100% 6px;
 }
 
-.data-table input:focus {
+.data-table input:not([type="checkbox"]):not([type="radio"]):focus {
   background-image: var(--underline-blue);
+}
+
+.data-table input[type="checkbox"],
+.data-table input.sketch-check {
+  width: 1.2rem;
+  min-width: 1.2rem;
+  max-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 !important;
+}
+
+.data-table input[type="checkbox"]:not(:checked),
+.data-table input.sketch-check:not(:checked) {
+  background-image: none;
 }
 
 .finish-standings-scroll {
@@ -1420,9 +1435,24 @@ input.sketch-check:focus-visible {
   overflow-x: auto;
 }
 
+/* Fixed narrow first column for row selection checkboxes */
+.data-table .col-check,
 .admin-table .col-check {
-  width: 2.2rem;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  max-width: 2.5rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
   text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.data-table .col-check input[type="checkbox"],
+.admin-table .col-check input[type="checkbox"] {
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* Section headers: gray band — soft sketchy sides (fade out), sketchy bottom stroke */
