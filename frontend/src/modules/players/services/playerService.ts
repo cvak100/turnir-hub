@@ -40,7 +40,44 @@ export interface PlayerDetail extends Omit<PlayerListItem, "person"> {
   notes: string;
   created_at: string;
   updated_at: string;
+  awards?: PlayerAwardItem[];
+  team_awards?: PlayerTeamAwardItem[];
 }
+
+export type PlayerAwardPrize = {
+  id: number;
+  prize_type: string;
+  value: string | number | null;
+  description: string;
+  sponsor_name?: string | null;
+};
+
+export type PlayerAwardItem = {
+  id: number;
+  award_name: string;
+  award_code: string;
+  edition_id: number;
+  edition_name: string;
+  edition_year: number | null;
+  team_name?: string | null;
+  notes: string;
+  prizes: PlayerAwardPrize[];
+};
+
+export type PlayerTeamAwardItem = {
+  id: number;
+  kind: "prize" | "standing" | string;
+  title: string;
+  edition_id: number | null;
+  edition_name: string | null;
+  edition_year: number | null;
+  team_name?: string | null;
+  prize_type?: string | null;
+  value?: string | number | null;
+  description?: string;
+  position?: number | null;
+  qualification?: string;
+};
 
 export type PlayerInput = {
   person?: number;

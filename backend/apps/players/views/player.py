@@ -26,6 +26,18 @@ class PlayerViewSet(viewsets.ModelViewSet):
     ordering_fields = ["created_at", "preferred_jersey_number"]
     ordering = ["-created_at"]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.action == "retrieve":
+            qs = qs.prefetch_related(
+                "awards__award",
+                "awards__tournament_edition",
+                "awards__team_participation__team",
+                "awards__prizes__sponsor",
+                "participations",
+            )
+        return qs
+
     def get_permissions(self):
         set_action_permission(
             self,

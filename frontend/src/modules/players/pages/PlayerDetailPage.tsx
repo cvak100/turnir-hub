@@ -256,6 +256,119 @@ export function PlayerDetailPage() {
             </div>
           </section>
 
+          <section className="border-frame border-frame--md">
+            <h2>Nagrade</h2>
+            <div className="player-columns">
+              <div>
+                <h3 style={{ marginTop: 0 }}>Posamezne</h3>
+                {(p.awards?.length ?? 0) === 0 ? (
+                  <p className="muted" style={{ marginBottom: 0 }}>
+                    Ni posameznih nagrad.
+                  </p>
+                ) : (
+                  <ul className="player-history">
+                    {(p.awards ?? []).map((award) => (
+                      <li key={award.id} className="player-history__item">
+                        <div className="player-history__main">
+                          <strong>{award.award_name}</strong>
+                          <span className="muted">
+                            {" "}
+                            ·{" "}
+                            {award.edition_name}
+                            {award.edition_year
+                              ? ` (${award.edition_year})`
+                              : ""}
+                          </span>
+                        </div>
+                        {award.team_name ? (
+                          <div className="player-history__meta muted">
+                            {award.team_name}
+                          </div>
+                        ) : null}
+                        {award.notes ? (
+                          <div className="player-history__meta muted">
+                            {award.notes}
+                          </div>
+                        ) : null}
+                        {award.prizes?.length ? (
+                          <ul className="player-history__matches">
+                            {award.prizes.map((prize) => (
+                              <li key={prize.id}>
+                                {prize.description || prize.prize_type}
+                                {prize.value != null && prize.value !== ""
+                                  ? ` · ${prize.value}`
+                                  : ""}
+                                {prize.sponsor_name
+                                  ? ` · ${prize.sponsor_name}`
+                                  : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {award.edition_id ? (
+                          <Link
+                            className="linkish"
+                            to={`/editions/${award.edition_id}`}
+                          >
+                            Edicija
+                          </Link>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h3 style={{ marginTop: 0 }}>Ekipne</h3>
+                {(p.team_awards?.length ?? 0) === 0 ? (
+                  <p className="muted" style={{ marginBottom: 0 }}>
+                    Ni ekipnih nagrad / uvrstitev.
+                  </p>
+                ) : (
+                  <ul className="player-history">
+                    {(p.team_awards ?? []).map((item) => (
+                      <li
+                        key={`${item.kind}-${item.id}`}
+                        className="player-history__item"
+                      >
+                        <div className="player-history__main">
+                          <strong>{item.title}</strong>
+                          <span className="muted">
+                            {" "}
+                            ·{" "}
+                            {item.edition_name || "Edicija"}
+                            {item.edition_year
+                              ? ` (${item.edition_year})`
+                              : ""}
+                          </span>
+                        </div>
+                        <div className="player-history__meta muted">
+                          {item.team_name || "Ekipa"}
+                          {item.kind === "standing" && item.position != null
+                            ? ` · ${item.position}. mesto`
+                            : ""}
+                          {item.kind === "prize" &&
+                          item.value != null &&
+                          item.value !== ""
+                            ? ` · ${item.value}`
+                            : ""}
+                        </div>
+                        {item.edition_id ? (
+                          <Link
+                            className="linkish"
+                            to={`/editions/${item.edition_id}`}
+                          >
+                            Edicija
+                          </Link>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </section>
+
           {yearPoints.length > 0 ? (
             <section className="border-frame border-frame--md">
               <h2>Skozi leta</h2>
