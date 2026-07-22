@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { env } from "@/env";
+import { getAccessToken } from "@/shared/api/tokens";
 
 export type WsConnectionStatus =
   | "connecting"
@@ -32,12 +33,24 @@ export type MatchUpdateMessage = {
   } | null;
 };
 
+/** Server closes with these codes when subscribe is not allowed — do not retry. */
+const WS_CLOSE_FORBIDDEN = 4403;
+const WS_CLOSE_NOT_FOUND = 4404;
+
 type Options = {
   matchId: number;
   enabled?: boolean;
   onMessage: (message: MatchUpdateMessage) => void;
   onReconnect?: () => void;
 };
+
+function buildMatchWsUrl(matchId: number): string {
+  const base = `${env.wsUrl.replace(/\/$/, "")}/matches/${matchId}/`;
+  const token = getAccessToken();
+  if (!token) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}token=${encodeURIComponent(token)}`;
+}
 
 export function useMatchWebSocket({
   matchId,
@@ -73,8 +86,7 @@ export function useMatchWebSocket({
     function connect() {
       if (cancelled) return;
       setStatus("connecting");
-      const url = `${env.wsUrl.replace(/\/$/, "")}/matches/${matchId}/`;
-      const socket = new WebSocket(url);
+      const socket = new WebSocket(buildMatchWsUrl(matchId));
       socketRef.current = socket;
 
       socket.onopen = () => {
@@ -100,9 +112,16 @@ export function useMatchWebSocket({
         // onclose will handle reconnect; avoid flicker via error state
       };
 
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         if (cancelled || intentionalClose.current) {
           setStatus("disconnected");
+          return;
+        }
+        if (
+          event.code === WS_CLOSE_FORBIDDEN ||
+          event.code === WS_CLOSE_NOT_FOUND
+        ) {
+          setStatus("error");
           return;
         }
         // Stay on "connecting" while waiting to retry — less flicker
@@ -129,7 +148,6 @@ export function useMatchWebSocket({
     socketRef.current?.close();
     intentionalClose.current = false;
     attemptRef.current += 1;
-    // effect won't re-run; force by toggling is awkward — parent remounts rarely
   }, []);
 
   return { status, reconnect };
