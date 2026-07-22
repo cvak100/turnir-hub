@@ -115,6 +115,9 @@ export function EditionDetailPage() {
           <li>
             <Link to={`/editions/${editionId}/events`}>Dogodki</Link>
           </li>
+          <li>
+            <Link to={`/editions/${editionId}/finish`}>Zaključek turnirja</Link>
+          </li>
         </ul>
       </section>
     </div>

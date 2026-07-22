@@ -47,6 +47,10 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
                 "fill_knockout": "phase.manage",
                 "generate_group_matches": "phase.manage",
                 "schedule_match_times": "match.manage",
+                "finish_preview": "edition.edit",
+                "finish": "edition.manage",
+                "save_standings": "edition.edit",
+                "save_awards": "edition.edit",
             },
             default="edition.edit",
         )
@@ -248,3 +252,102 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
             overwrite=bool(overwrite),
         )
         return Response(MatchListSerializer(matches, many=True).data)
+
+    @action(detail=True, methods=["get"], url_path="finish-preview")
+    def finish_preview(self, request, pk=None):
+        from apps.tournaments.serializers.finish import (
+            AwardSerializer,
+            SponsorSerializer,
+        )
+        from apps.tournaments.services.edition_finish import EditionFinishService
+
+        edition = self.get_object()
+        preview = EditionFinishService.preview(edition=edition)
+        return Response(
+            {
+                "edition_id": preview["edition_id"],
+                "edition_name": preview["edition_name"],
+                "status": preview["status"],
+                "can_finish": preview["can_finish"],
+                "ranking_criteria": preview["ranking_criteria"],
+                "unfinished_matches": preview["unfinished_matches"],
+                "structure": preview["structure"],
+                "group_standings": preview["group_standings"],
+                "knockout_matches": preview["knockout_matches"],
+                "proposed_standings": preview["proposed_standings"],
+                "award_entries": preview["award_entries"],
+                "awards_catalog": AwardSerializer(
+                    preview["awards_catalog"], many=True
+                ).data,
+                "ranking_criteria_catalog": preview["ranking_criteria_catalog"],
+                "edition_teams": preview["edition_teams"],
+                "sponsors": SponsorSerializer(preview["sponsors"], many=True).data,
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="finish")
+    def finish(self, request, pk=None):
+        from apps.tournaments.serializers.edition import (
+            TournamentEditionDetailSerializer,
+        )
+        from apps.tournaments.serializers.finish import FinishEditionInputSerializer
+        from apps.tournaments.services.edition_finish import EditionFinishService
+
+        edition = self.get_object()
+        serializer = FinishEditionInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        edition = EditionFinishService.finish(
+            edition=edition,
+            standings=data.get("standings"),
+            award_entries=data.get("award_entries"),
+            player_awards=data.get("player_awards"),
+            prizes=data.get("prizes"),
+            new_awards=data.get("new_awards"),
+        )
+        edition = self.get_queryset().get(pk=edition.pk)
+        return Response(
+            TournamentEditionDetailSerializer(
+                edition, context=self.get_serializer_context()
+            ).data
+        )
+
+    @action(detail=True, methods=["post"], url_path="save-standings")
+    def save_standings(self, request, pk=None):
+        from apps.tournaments.serializers.finish import FinishStandingInputSerializer
+        from apps.tournaments.services.edition_finish import EditionFinishService
+
+        edition = self.get_object()
+        rows = request.data.get("standings")
+        if not isinstance(rows, list):
+            return Response(
+                {"standings": ["Expected a list."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = FinishStandingInputSerializer(data=rows, many=True)
+        serializer.is_valid(raise_exception=True)
+        created = EditionFinishService.replace_final_standings(
+            edition=edition,
+            rows=serializer.validated_data,
+        )
+        return Response({"ok": True, "count": len(created)})
+
+    @action(detail=True, methods=["post"], url_path="save-awards")
+    def save_awards(self, request, pk=None):
+        from apps.tournaments.serializers.finish import FinishAwardEntryInputSerializer
+        from apps.tournaments.services.edition_finish import EditionFinishService
+
+        edition = self.get_object()
+        rows = request.data.get("award_entries")
+        if not isinstance(rows, list):
+            return Response(
+                {"award_entries": ["Expected a list."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = FinishAwardEntryInputSerializer(data=rows, many=True)
+        serializer.is_valid(raise_exception=True)
+        created = EditionFinishService.replace_award_entries(
+            edition=edition,
+            rows=serializer.validated_data,
+        )
+        return Response({"ok": True, "count": len(created)})

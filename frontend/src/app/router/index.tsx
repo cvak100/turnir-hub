@@ -23,6 +23,7 @@ import { DashboardPage } from "@/modules/dashboard/pages/DashboardPage";
 import { EditionDetailPage } from "@/modules/editions/pages/EditionDetailPage";
 import { EditionEditPage } from "@/modules/editions/pages/EditionEditPage";
 import { EditionEventsPage } from "@/modules/editions/pages/EditionEventsPage";
+import { EditionFinishPage } from "@/modules/editions/pages/EditionFinishPage";
 import { EditionMatchesPage } from "@/modules/editions/pages/EditionMatchesPage";
 import { EditionPhasesPage } from "@/modules/editions/pages/EditionPhasesPage";
 import { EditionPlayersPage } from "@/modules/editions/pages/EditionPlayersPage";
@@ -166,6 +167,10 @@ export function AppRouter() {
             <Route
               path="/editions/:id/events"
               element={<EditionEventsPage />}
+            />
+            <Route
+              path="/editions/:id/finish"
+              element={<EditionFinishPage />}
             />
 
             <Route path="/teams" element={<TeamListPage />} />

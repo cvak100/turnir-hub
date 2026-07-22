@@ -74,8 +74,11 @@ const DEFAULT_GROUP_CONFIG = {
   ranking_criteria: [
     "points",
     "goal_difference",
-    "goals_scored",
-    "head_to_head",
+    "goals_for",
+    "head_to_head_points",
+    "head_to_head_goal_difference",
+    "head_to_head_goals_for",
+    "team_name",
   ],
 };
 

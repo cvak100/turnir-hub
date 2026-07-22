@@ -13,10 +13,26 @@ from apps.tournaments.views.phase import (
     TournamentPhaseGroupViewSet,
     TournamentPhaseViewSet,
 )
+from apps.tournaments.views.finish import (
+    AwardViewSet,
+    PlayerAwardViewSet,
+    SponsorViewSet,
+    TournamentFinalStandingViewSet,
+    TournamentPrizeViewSet,
+)
 from apps.tournaments.views.tournament import TournamentViewSet
 
 router = DefaultRouter()
 router.register(r"tournaments", TournamentViewSet, basename="tournament")
+router.register(r"sponsors", SponsorViewSet, basename="sponsor")
+router.register(r"awards", AwardViewSet, basename="award")
+router.register(
+    r"final-standings",
+    TournamentFinalStandingViewSet,
+    basename="final-standing",
+)
+router.register(r"player-awards", PlayerAwardViewSet, basename="player-award")
+router.register(r"tournament-prizes", TournamentPrizeViewSet, basename="tournament-prize")
 router.register(r"sports", SportViewSet, basename="sport")
 router.register(
     r"tournament-statuses",

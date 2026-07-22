@@ -236,7 +236,7 @@ class GroupKnockoutGenerator:
         for idx, team_name in enumerate(TEAM_NAMES):
             team = TeamService.create_team(
                 data={
-                    "name": f"{team_name} Trojke {stamp}",
+                    "name": f"{team_name} Trojke",
                     "short_name": f"G{idx + 1}",
                     "city": "Ljubljana",
                 }
