@@ -19,7 +19,7 @@ ROLE_FLAGS = (
 class PersonStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonStatus
-        fields = ["id", "name", "code", "color"]
+        fields = ["id", "name", "code", "color", "order", "is_active"]
 
 
 class LinkedUserSerializer(serializers.ModelSerializer):
@@ -37,7 +37,7 @@ class CountrySerializer(serializers.ModelSerializer):
 class PlayerStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlayerStatus
-        fields = ["id", "name", "code", "color"]
+        fields = ["id", "name", "code", "color", "order", "is_active"]
 
 
 class PersonRoleTypeSerializer(serializers.ModelSerializer):

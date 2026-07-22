@@ -43,6 +43,10 @@ export interface MatchListItem {
   phase_name?: string;
   phase_type?: string;
   group_name?: string | null;
+  edition_id?: number;
+  edition_name?: string | null;
+  tournament_id?: number;
+  tournament_name?: string | null;
   match_number: number | null;
   match_date: string | null;
   status: StatusRef;
@@ -319,8 +323,19 @@ export const matchService = {
     });
   },
 
+  bulkSetStatus(ids: number[], statusId: number) {
+    return api.post<{ ok: boolean; count: number }>("/matches/bulk-set-status/", {
+      ids,
+      status: statusId,
+    });
+  },
+
   setPenalties(id: number, enabled = true) {
     return api.post<MatchDetail>(`/matches/${id}/set-penalties/`, { enabled });
+  },
+
+  listStatuses() {
+    return api.get<MatchStatusItem[]>("/match-statuses/", { auth: false });
   },
 };
 

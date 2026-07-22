@@ -14,7 +14,7 @@ from apps.users.serializers import PersonMinimalSerializer
 class TournamentStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = TournamentStatus
-        fields = ["id", "name", "code", "color"]
+        fields = ["id", "name", "code", "color", "order", "is_active"]
 
 
 class TournamentFormatSerializer(serializers.ModelSerializer):
@@ -27,6 +27,7 @@ class TournamentFormatSerializer(serializers.ModelSerializer):
             "description",
             "default_phases",
             "order",
+            "is_active",
         ]
 
 

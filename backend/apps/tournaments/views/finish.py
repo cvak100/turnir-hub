@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.utils import scope_queryset_to_editions
+from apps.core.views.catalog import AdminWritableCatalogMixin
 from apps.players.models import Award, PlayerAward
 from apps.tournaments.models import Sponsor, TournamentFinalStanding, TournamentPrize
 from apps.tournaments.serializers.finish import (
@@ -16,20 +17,18 @@ from apps.tournaments.serializers.finish import (
     TournamentPrizeSerializer,
     TournamentPrizeWriteSerializer,
 )
-from apps.users.permissions import HasPermission, HasTournamentPermission
+from apps.users.permissions import HasPermission, HasTournamentPermission, IsDashboardAdmin
 from apps.users.permissions.utils import set_action_permission
 
 
-class SponsorViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Sponsor.objects.filter(is_active=True).order_by("name")
+class SponsorViewSet(AdminWritableCatalogMixin, viewsets.ModelViewSet):
+    queryset = Sponsor.objects.all().order_by("name")
     serializer_class = SponsorSerializer
+    read_permission_classes = [AllowAny]
     search_fields = ["name"]
+    ordering_fields = ["name"]
     ordering = ["name"]
-
-    def get_permissions(self):
-        if self.action in ("list", "retrieve"):
-            return [AllowAny()]
-        return [HasTournamentPermission()]
+    pagination_class = None
 
 
 class AwardViewSet(viewsets.ModelViewSet):
@@ -38,10 +37,15 @@ class AwardViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "code"]
     ordering_fields = ["order", "name"]
     ordering = ["order", "name"]
+    pagination_class = None
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
             return [AllowAny()]
+        from apps.users.permissions import IsDashboardAdmin
+
+        if IsDashboardAdmin().has_permission(self.request, self):
+            return [IsDashboardAdmin()]
         set_action_permission(
             self,
             {
@@ -55,7 +59,7 @@ class AwardViewSet(viewsets.ModelViewSet):
         return [HasPermission()]
 
     def get_serializer_class(self):
-        if self.action == "create":
+        if self.action in ("create", "update", "partial_update"):
             return AwardCreateSerializer
         return AwardSerializer
 
@@ -78,6 +82,19 @@ class AwardViewSet(viewsets.ModelViewSet):
             },
         )
         return Response(AwardSerializer(award).data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        award = self.get_object()
+        serializer = self.get_serializer(award, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if "code" in data and data["code"]:
+            data["code"] = str(data["code"]).strip().lower().replace(" ", "_")[:50]
+        for key, value in data.items():
+            setattr(award, key, value)
+        award.save()
+        return Response(AwardSerializer(award).data)
 
 
 class TournamentFinalStandingViewSet(viewsets.ModelViewSet):

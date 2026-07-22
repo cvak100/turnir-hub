@@ -3,6 +3,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.views.catalog import AdminWritableCatalogMixin
 from apps.tournaments.models import (
     GlobalRuleTemplate,
     Sport,
@@ -20,42 +21,43 @@ from apps.tournaments.serializers.global_rule_template import (
     GlobalRuleTemplateSerializer,
 )
 from apps.tournaments.serializers.tournament import SportSerializer
+from apps.users.permissions import IsDashboardAdmin
 
 
-class SportViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
+class SportViewSet(AdminWritableCatalogMixin, viewsets.ModelViewSet):
+    read_permission_classes = [IsAuthenticated]
     serializer_class = SportSerializer
-    queryset = Sport.objects.filter(is_active=True)
+    queryset = Sport.objects.all()
     search_fields = ["name"]
     ordering_fields = ["name"]
     ordering = ["name"]
     pagination_class = None
 
 
-class TournamentStatusViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
+class TournamentStatusViewSet(AdminWritableCatalogMixin, viewsets.ModelViewSet):
+    read_permission_classes = [IsAuthenticated]
     serializer_class = TournamentStatusSerializer
-    queryset = TournamentStatus.objects.filter(is_active=True)
+    queryset = TournamentStatus.objects.all()
     search_fields = ["name", "code"]
     ordering_fields = ["order", "name", "code"]
     ordering = ["order", "name"]
     pagination_class = None
 
 
-class TournamentFormatViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
+class TournamentFormatViewSet(AdminWritableCatalogMixin, viewsets.ModelViewSet):
+    read_permission_classes = [IsAuthenticated]
     serializer_class = TournamentFormatSerializer
-    queryset = TournamentFormat.objects.filter(is_active=True)
+    queryset = TournamentFormat.objects.all()
     search_fields = ["name", "code"]
     ordering_fields = ["order", "name", "code"]
     ordering = ["order", "name"]
     pagination_class = None
 
 
-class TournamentCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
+class TournamentCategoryViewSet(AdminWritableCatalogMixin, viewsets.ModelViewSet):
+    read_permission_classes = [IsAuthenticated]
     serializer_class = TournamentCategorySerializer
-    queryset = TournamentCategory.objects.filter(is_active=True)
+    queryset = TournamentCategory.objects.all()
     search_fields = ["name", "slug"]
     ordering_fields = ["order", "name"]
     ordering = ["order", "name"]
@@ -68,14 +70,27 @@ class GlobalRuleTemplateViewSet(viewsets.ModelViewSet):
     System (seed) templates cannot be deleted.
     """
 
-    permission_classes = [IsAuthenticated]
     search_fields = ["name"]
     ordering_fields = ["name"]
     ordering = ["name"]
     pagination_class = None
 
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [IsAuthenticated()]
+        if self.action == "create":
+            return [IsAuthenticated()]
+        return [IsDashboardAdmin()]
+
     def get_queryset(self):
-        return GlobalRuleTemplate.objects.filter(is_active=True)
+        qs = GlobalRuleTemplate.objects.all()
+        user = self.request.user
+        if user and user.is_authenticated and (
+            user.is_superuser
+            or IsDashboardAdmin().has_permission(self.request, self)
+        ):
+            return qs
+        return qs.filter(is_active=True)
 
     def get_serializer_class(self):
         if self.action == "create":

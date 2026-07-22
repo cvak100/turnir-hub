@@ -9,7 +9,7 @@ from apps.users.serializers import PersonMinimalSerializer, PersonPublicSerializ
 class PlayerStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlayerStatus
-        fields = ["id", "name", "code", "color"]
+        fields = ["id", "name", "code", "color", "order", "is_active"]
 
 
 class PlayerAwardProfileSerializer(serializers.ModelSerializer):

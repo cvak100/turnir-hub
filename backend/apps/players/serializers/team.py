@@ -21,7 +21,7 @@ SHIRT_COLOR_CODES = [
 class TeamStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamStatus
-        fields = ["id", "name", "code", "color"]
+        fields = ["id", "name", "code", "color", "order", "is_active"]
 
 
 class TeamListSerializer(serializers.ModelSerializer):

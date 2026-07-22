@@ -12,4 +12,5 @@ class TournamentCategorySerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "order",
+            "is_active",
         ]

@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.utils import scope_queryset_to_editions
+from apps.core.views.catalog import AdminWritableCatalogMixin
 from apps.matches.models import EventType, Match, MatchEvent, MatchStatus
 from apps.matches.serializers.match import (
     EventTypeSerializer,
@@ -16,7 +17,7 @@ from apps.matches.serializers.match import (
     MatchStatusSerializer,
 )
 from apps.matches.services.match import MatchEventService, MatchService
-from apps.users.permissions import HasMatchPermission
+from apps.users.permissions import HasMatchPermission, IsDashboardAdmin
 from apps.users.permissions.utils import set_action_permission
 
 
@@ -25,12 +26,22 @@ class MatchViewSet(viewsets.ModelViewSet):
     search_fields = [
         "home_team_participation__participation_name",
         "away_team_participation__participation_name",
+        "tournament_phase__name",
+        "tournament_phase__tournament_edition__name",
+        "tournament_phase__tournament_edition__tournament__name",
     ]
     ordering_fields = [
         "match_date",
         "match_number",
         "created_at",
         "tournament_phase__order",
+        "tournament_phase__name",
+        "tournament_phase__tournament_edition__name",
+        "tournament_phase__tournament_edition__tournament__name",
+        "home_team_participation__participation_name",
+        "id",
+        "status__order",
+        "status__name",
     ]
     ordering = ["match_date", "tournament_phase__order", "match_number"]
 
@@ -47,15 +58,26 @@ class MatchViewSet(viewsets.ModelViewSet):
             "finish": "match.finish",
             "set_penalties": "match.live.manage",
             "set_status": "match.live.manage",
+            "bulk_set_status": "match.live.manage",
             "recalculate": "match.live.manage",
         }
         set_action_permission(self, mapping, default="match.manage")
+        # Dashboard admins can bulk-manage without edition-scoped match roles.
+        if self.action == "bulk_set_status" and IsDashboardAdmin().has_permission(
+            self.request, self
+        ):
+            return [IsDashboardAdmin()]
+        if self.action == "destroy" and IsDashboardAdmin().has_permission(
+            self.request, self
+        ):
+            return [IsDashboardAdmin()]
         return [HasMatchPermission()]
 
     def get_queryset(self):
         qs = Match.objects.select_related(
             "tournament_phase",
             "tournament_phase__tournament_edition",
+            "tournament_phase__tournament_edition__tournament",
             "tournament_phase_group",
             "home_team_participation",
             "away_team_participation",
@@ -155,21 +177,64 @@ class MatchViewSet(viewsets.ModelViewSet):
         match = MatchEventService.refresh_match_from_events(match=self.get_object())
         return Response(MatchDetailSerializer(match).data)
 
+    @action(detail=False, methods=["post"], url_path="bulk-set-status")
+    def bulk_set_status(self, request):
+        """Set status for many matches at once (admin / live manage)."""
+        ids = request.data.get("ids") or request.data.get("match_ids") or []
+        status_id = request.data.get("status") or request.data.get("status_id")
+        if not isinstance(ids, list) or not ids:
+            return Response(
+                {"ids": ["Provide a non-empty list of match ids."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not status_id:
+            return Response(
+                {"status": ["Required."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            new_status = MatchStatus.objects.get(pk=int(status_id))
+        except (MatchStatus.DoesNotExist, TypeError, ValueError):
+            return Response(
+                {"status": ["Invalid status id."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-class MatchStatusViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = MatchStatus.objects.filter(is_active=True).order_by("order", "id")
+        qs = self.get_queryset().filter(pk__in=ids)
+        updated = []
+        for match in qs:
+            updated.append(
+                MatchService.update_match(match=match, data={"status": new_status})
+            )
+        return Response(
+            {
+                "ok": True,
+                "count": len(updated),
+                "matches": MatchListSerializer(updated, many=True).data,
+            }
+        )
+
+
+class MatchStatusViewSet(AdminWritableCatalogMixin, viewsets.ModelViewSet):
+    queryset = MatchStatus.objects.all().order_by("order", "id")
     serializer_class = MatchStatusSerializer
-    permission_classes = [AllowAny]
+    read_permission_classes = [AllowAny]
     pagination_class = None
+    search_fields = ["name", "code"]
+    ordering_fields = ["order", "name", "code"]
+    ordering = ["order", "id"]
 
 
-class EventTypeViewSet(viewsets.ReadOnlyModelViewSet):
+class EventTypeViewSet(AdminWritableCatalogMixin, viewsets.ModelViewSet):
     """List existing EventType rows for Live / Normal Edit action buttons."""
 
-    queryset = EventType.objects.filter(is_active=True).order_by("order", "id")
+    queryset = EventType.objects.all().order_by("order", "id")
     serializer_class = EventTypeSerializer
-    permission_classes = [AllowAny]
+    read_permission_classes = [AllowAny]
     pagination_class = None
+    search_fields = ["name", "code"]
+    ordering_fields = ["order", "name", "code"]
+    ordering = ["order", "id"]
 
 
 class MatchEventViewSet(viewsets.ModelViewSet):

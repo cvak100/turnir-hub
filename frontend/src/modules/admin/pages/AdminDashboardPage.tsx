@@ -21,6 +21,18 @@ const ADMIN_MODULES = [
     path: "/dashboard_admin/tournaments",
   },
   {
+    id: "matches",
+    label: "Matches",
+    description: "Seznam tekem, masovni statusi, urejanje in brisanje.",
+    path: "/dashboard_admin/matches",
+  },
+  {
+    id: "catalog",
+    label: "Katalog / šifranti",
+    description: "Nagrade, statusi, tipi dogodkov, kategorije…",
+    path: "/dashboard_admin/catalog",
+  },
+  {
     id: "generator",
     label: "Generator",
     description: "Generator A (turnir) in B (zgodovina igralca).",

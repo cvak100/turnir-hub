@@ -8,13 +8,13 @@ from apps.users.serializers import PersonMinimalSerializer
 class MatchStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = MatchStatus
-        fields = ["id", "name", "code", "color"]
+        fields = ["id", "name", "code", "color", "order", "is_active"]
 
 
 class EventTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventType
-        fields = ["id", "name", "code", "icon", "color"]
+        fields = ["id", "name", "code", "icon", "color", "order", "is_active"]
 
 
 class MatchListSerializer(serializers.ModelSerializer):
@@ -42,6 +42,22 @@ class MatchListSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
+    edition_id = serializers.IntegerField(
+        source="tournament_phase.tournament_edition_id",
+        read_only=True,
+    )
+    edition_name = serializers.CharField(
+        source="tournament_phase.tournament_edition.name",
+        read_only=True,
+    )
+    tournament_id = serializers.IntegerField(
+        source="tournament_phase.tournament_edition.tournament_id",
+        read_only=True,
+    )
+    tournament_name = serializers.CharField(
+        source="tournament_phase.tournament_edition.tournament.name",
+        read_only=True,
+    )
 
     class Meta:
         model = Match
@@ -52,6 +68,10 @@ class MatchListSerializer(serializers.ModelSerializer):
             "phase_name",
             "phase_type",
             "group_name",
+            "edition_id",
+            "edition_name",
+            "tournament_id",
+            "tournament_name",
             "match_number",
             "match_date",
             "status",
