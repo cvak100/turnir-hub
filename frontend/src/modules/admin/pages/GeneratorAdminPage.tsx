@@ -58,6 +58,26 @@ type GeneratorAResult = {
   };
 };
 
+type GeneratorAAResult = {
+  tournament_id: number;
+  edition_id: number;
+  tournament_name: string;
+  champion: string | null;
+  final_score: string;
+  edition_status: string | null;
+  groups: number;
+  teams: number;
+  steps: GeneratorStep[];
+  links: {
+    tournament: string;
+    edition: string;
+    matches: string;
+    players: string;
+    finish: string;
+    phases: string;
+  };
+};
+
 type GeneratorBResult = {
   player_id: number;
   player_name: string;
@@ -80,6 +100,15 @@ const FLOW_A = [
   "Zakljucek turnirja",
 ] as const;
 
+const FLOW_AA = [
+  "Format group_knockout (Trojke)",
+  "12 ekip, 4 skupine po 3",
+  "5 igralcev na ekipo + roster",
+  "Round-robin v skupinah → 1. naprej",
+  "Polfinale, 3. mesto, finale (odigrano)",
+  "Edicija ostane ongoing (za /finish)",
+] as const;
+
 const FLOW_B = [
   "Ustvari ali uporabi igralca",
   "Sandbox turnir ([SANDBOX] Player History Lab)",
@@ -90,12 +119,18 @@ const FLOW_B = [
 
 export function GeneratorAdminPage() {
   const [showA, setShowA] = useState(false);
-  const [showB, setShowB] = useState(true);
+  const [showAA, setShowAA] = useState(true);
+  const [showB, setShowB] = useState(false);
 
   const [busyA, setBusyA] = useState(false);
   const [errorA, setErrorA] = useState<unknown>(null);
   const [resultA, setResultA] = useState<GeneratorAResult | null>(null);
   const [seedA, setSeedA] = useState("");
+
+  const [busyAA, setBusyAA] = useState(false);
+  const [errorAA, setErrorAA] = useState<unknown>(null);
+  const [resultAA, setResultAA] = useState<GeneratorAAResult | null>(null);
+  const [seedAA, setSeedAA] = useState("");
 
   const [busyB, setBusyB] = useState(false);
   const [errorB, setErrorB] = useState<unknown>(null);
@@ -165,6 +200,25 @@ export function GeneratorAdminPage() {
       setErrorA(err);
     } finally {
       setBusyA(false);
+    }
+  }
+
+  async function runAA() {
+    setBusyAA(true);
+    setErrorAA(null);
+    setResultAA(null);
+    try {
+      const body: { seed?: number } = {};
+      if (seedAA.trim() !== "") body.seed = Number.parseInt(seedAA, 10);
+      const data = await api.post<GeneratorAAResult>(
+        "/admin/generator/group-knockout/",
+        body,
+      );
+      setResultAA(data);
+    } catch (err) {
+      setErrorAA(err);
+    } finally {
+      setBusyAA(false);
     }
   }
 
@@ -314,6 +368,135 @@ export function GeneratorAdminPage() {
                 </div>
                 <ol className="generator-steps">
                   {resultA.steps.map((s, i) => (
+                    <li key={`${s.step}-${i}`}>
+                      <strong>{s.message}</strong>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </section>
+
+      {/* Generator AA */}
+      <section className="border-frame border-frame--md">
+        <div
+          className="row-actions"
+          style={{
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: showAA ? "0.75rem" : 0,
+          }}
+        >
+          <div>
+            <h2 style={{ margin: 0 }}>Generator AA</h2>
+            <p className="muted" style={{ margin: "0.25rem 0 0" }}>
+              Skupine + izpadanje (12 ekip, 4×3, zmagovalci v PF). Brez
+              zaključka.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="border-frame border-frame--sm"
+            aria-expanded={showAA}
+            onClick={() => setShowAA((v) => !v)}
+          >
+            {showAA ? "−" : "+"}
+          </button>
+        </div>
+
+        {showAA ? (
+          <>
+            <ErrorBanner error={errorAA} />
+            <ol className="generator-flow">
+              {FLOW_AA.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
+            <div className="stack-form">
+              <label>
+                Seed (opcijsko)
+                <input
+                  type="number"
+                  value={seedAA}
+                  onChange={(e) => setSeedAA(e.target.value)}
+                  placeholder="npr. 42"
+                  disabled={busyAA}
+                />
+              </label>
+              <div className="row-actions">
+                <button
+                  type="button"
+                  className="border-frame border-frame--sm"
+                  disabled={busyAA}
+                  onClick={() => void runAA()}
+                >
+                  {busyAA ? "Generiram…" : "Generiraj skupine + KO"}
+                </button>
+              </div>
+            </div>
+            {busyAA ? (
+              <StateMessage
+                variant="loading"
+                message="Ustvarjam skupine in izpadanje…"
+              />
+            ) : null}
+            {resultAA ? (
+              <div className="generator-result" style={{ marginTop: "1rem" }}>
+                <p className="generator-result__champ">
+                  Zmagovalec finala:{" "}
+                  <strong>{resultAA.champion ?? "—"}</strong>
+                  {resultAA.final_score ? (
+                    <span className="muted">
+                      {" "}
+                      · finale {resultAA.final_score}
+                    </span>
+                  ) : null}
+                </p>
+                <p>
+                  <strong>{resultAA.tournament_name}</strong>
+                  <span className="muted">
+                    {" "}
+                    · #{resultAA.tournament_id} / edicija #
+                    {resultAA.edition_id} · status{" "}
+                    {resultAA.edition_status ?? "—"}
+                  </span>
+                </p>
+                <div className="row-actions" style={{ marginBottom: "0.75rem" }}>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultAA.links.edition}
+                  >
+                    Edicija
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultAA.links.phases}
+                  >
+                    Faze
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultAA.links.matches}
+                  >
+                    Tekme
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultAA.links.players}
+                  >
+                    Igralci
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultAA.links.finish}
+                  >
+                    Zaključek
+                  </Link>
+                </div>
+                <ol className="generator-steps">
+                  {resultAA.steps.map((s, i) => (
                     <li key={`${s.step}-${i}`}>
                       <strong>{s.message}</strong>
                     </li>

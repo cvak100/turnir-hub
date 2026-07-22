@@ -44,6 +44,14 @@ FINISHED_MATCH_STATUS_CODES = frozenset(
     {"finished", "match_finished", "match_abandoned"}
 )
 
+# Edition can be closed when every match is finished-like or cancelled.
+COMPLETED_MATCH_STATUS_CODES = frozenset(
+    {
+        *FINISHED_MATCH_STATUS_CODES,
+        "cancelled",
+    }
+)
+
 SCHEDULED_MATCH_STATUS_CODES = frozenset(
     {"scheduled", "match_scheduled", "match_not_started", "postponed"}
 )
@@ -65,6 +73,10 @@ def is_live_match_status(code: str | None) -> bool:
 
 def is_finished_match_status(code: str | None) -> bool:
     return bool(code) and code in FINISHED_MATCH_STATUS_CODES
+
+
+def is_completed_match_status(code: str | None) -> bool:
+    return bool(code) and code in COMPLETED_MATCH_STATUS_CODES
 
 
 def is_scheduled_match_status(code: str | None) -> bool:

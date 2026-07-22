@@ -33,7 +33,11 @@ class TournamentFormatConfig(models.Model):
     ranking_criteria = models.JSONField(
         default=list,
         blank=True,
-        help_text='Ordered list, e.g. ["points","goal_difference","goals_for","head_to_head"]',
+        help_text=(
+            'Ordered list, e.g. ["points","goal_difference","goals_for",'
+            '"head_to_head_points","head_to_head_goal_difference",'
+            '"head_to_head_goals_for","team_name"]'
+        ),
     )
 
     # Timing (scheduling hints; match duration can still come from rule template)

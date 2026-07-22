@@ -8,20 +8,14 @@ from rest_framework.exceptions import ValidationError
 
 from apps.core.exceptions import ConflictError, InvalidStateError
 from apps.matches.models import Match, MatchStatus
+from apps.matches.status_codes import FINISHED_MATCH_STATUS_CODES
 from apps.tournaments.models import (
     TournamentFormatConfig,
     TournamentPhase,
-    TournamentPhaseGroupTeam,
 )
 from apps.tournaments.services.group import TournamentPhaseGroupService
+from apps.tournaments.services.standings import DEFAULT_RANKING, StandingsService
 
-
-DEFAULT_RANKING = [
-    "points",
-    "goal_difference",
-    "goals_for",
-    "head_to_head",
-]
 
 # (round_code, name, phase_type, match_count) for a bracket of size N
 KNOCKOUT_ROUND_BY_TEAMS = {
@@ -349,42 +343,6 @@ class TournamentFormatConfigService:
         return created
 
 
-class StandingsService:
-    @staticmethod
-    def sort_group_teams(group_teams, criteria: list[str] | None = None):
-        criteria = criteria or DEFAULT_RANKING
-
-        def key(gt: TournamentPhaseGroupTeam):
-            gd = (gt.goals_for or 0) - (gt.goals_against or 0)
-            parts = []
-            for c in criteria:
-                if c == "points":
-                    parts.append(-(gt.points or 0))
-                elif c in ("goal_difference", "gd"):
-                    parts.append(-gd)
-                elif c in ("goals_for", "goals_scored", "gf"):
-                    parts.append(-(gt.goals_for or 0))
-                elif c == "head_to_head":
-                    parts.append(0)  # not computed yet
-                else:
-                    parts.append(0)
-            parts.append(gt.order or 0)
-            parts.append(gt.id)
-            return tuple(parts)
-
-        return sorted(list(group_teams), key=key)
-
-    @staticmethod
-    def ranked_teams_per_group(*, group_phase, criteria: list[str] | None = None):
-        result = []
-        for group in group_phase.groups.order_by("order", "id"):
-            teams = list(
-                group.group_teams.select_related("team_participation").all()
-            )
-            result.append(StandingsService.sort_group_teams(teams, criteria))
-        return result
-
-
 class MatchGenerationService:
     """Round-robin with real teams + knockout fill."""
 
@@ -544,7 +502,7 @@ class MatchGenerationService:
         if not force:
             unfinished = Match.objects.filter(
                 tournament_phase=group_phase,
-            ).exclude(status__code="finished")
+            ).exclude(status__code__in=FINISHED_MATCH_STATUS_CODES)
             if unfinished.exists():
                 raise ConflictError(
                     "Group matches are not all finished. "

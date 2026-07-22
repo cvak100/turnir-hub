@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.services.demo_generator import DemoTournamentGenerator
+from apps.core.services.group_knockout_generator import GroupKnockoutGenerator
 from apps.core.services.player_history_generator import PlayerHistoryGenerator
 from apps.users.permissions import HasPermission
 
@@ -29,6 +30,22 @@ class DemoTournamentGeneratorView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         result = DemoTournamentGenerator.run(user=request.user, seed=seed_int)
+        return Response(result, status=status.HTTP_201_CREATED)
+
+
+class GroupKnockoutGeneratorView(APIView):
+    """Admin-only: Generator AA — groups + knockout (12 teams), leaves edition open."""
+
+    permission_classes = [HasPermission]
+    required_permission = "admin.full_access"
+
+    def post(self, request):
+        try:
+            seed_int = _parse_seed(request.data.get("seed"))
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        result = GroupKnockoutGenerator.run(user=request.user, seed=seed_int)
         return Response(result, status=status.HTTP_201_CREATED)
 
 

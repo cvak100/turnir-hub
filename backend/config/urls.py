@@ -11,6 +11,7 @@ from rest_framework_simplejwt.views import (
 
 from apps.core.views.generator import (
     DemoTournamentGeneratorView,
+    GroupKnockoutGeneratorView,
     PlayerHistoryGeneratorView,
 )
 from apps.core.views.health import HealthView
@@ -29,6 +30,11 @@ urlpatterns = [
         "api/v1/admin/generator/demo-tournament/",
         DemoTournamentGeneratorView.as_view(),
         name="admin-generator-demo-tournament",
+    ),
+    path(
+        "api/v1/admin/generator/group-knockout/",
+        GroupKnockoutGeneratorView.as_view(),
+        name="admin-generator-group-knockout",
     ),
     path(
         "api/v1/admin/generator/player-history/",
