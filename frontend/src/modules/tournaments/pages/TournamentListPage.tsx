@@ -1,59 +1,95 @@
-﻿import { Link } from "react-router-dom";
+﻿import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
   StateMessage,
 } from "@/shared/components";
 import { useAsyncData } from "@/shared/hooks/useAsyncData";
-import { useAuth } from "@/shared/auth";
-import { tournamentService } from "../services/tournamentService";
+import {
+  editionBucket,
+  publicApi,
+  type EditionBucket,
+} from "@/modules/public/services/publicApi";
+
+type FilterKey = "all" | EditionBucket;
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "Vsi" },
+  { key: "active", label: "Aktivni" },
+  { key: "upcoming", label: "Prihajajoči" },
+  { key: "finished", label: "Končani" },
+];
 
 export function TournamentListPage() {
-  const { hasPermission, user } = useAuth();
-  const { data, loading, error } = useAsyncData(
-    () => tournamentService.list(),
-    [],
-  );
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const list = useAsyncData(() => publicApi.listEditions(), []);
+
+  const rows = useMemo(() => {
+    const all = list.data?.results ?? [];
+    if (filter === "all") return all;
+    return all.filter((e) => editionBucket(e.status?.code) === filter);
+  }, [filter, list.data]);
 
   return (
     <div className="page">
       <PageHeader
-        title="Tournaments"
-        subtitle="Public tournament list."
-        actions={
-          user && hasPermission("tournament.create") ? (
-            <Link className="button-link border-frame border-frame--sm" to="/tournaments/new">
-              New tournament
-            </Link>
-          ) : null
-        }
+        title="Turnirji"
+        subtitle="Javne edicije — klik odpre dashboard edicije."
       />
-      <ErrorBanner error={error} />
-      {loading ? <StateMessage variant="loading" /> : null}
-      {!loading && !error && data?.results.length === 0 ? (
-        <StateMessage variant="empty" message="No tournaments yet." />
+      <ErrorBanner error={list.error} />
+
+      <div className="public-filter-row row-actions">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            className={
+              filter === f.key
+                ? "border-frame border-frame--sm"
+                : "button-secondary border-frame border-frame--sm"
+            }
+            onClick={() => setFilter(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {list.loading ? <StateMessage variant="loading" /> : null}
+      {!list.loading && rows.length === 0 ? (
+        <StateMessage variant="empty" message="Ni javnih edicij za ta filter." />
       ) : null}
-      {!loading && data && data.results.length > 0 ? (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Sport</th>
-              <th>Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.results.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <Link to={`/tournaments/${item.id}`}>{item.name}</Link>
-                </td>
-                <td>{item.sport?.name ?? "—"}</td>
-                <td>{item.is_active ? "yes" : "no"}</td>
+
+      {rows.length > 0 ? (
+        <div className="admin-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Edicija</th>
+                <th>Turnir</th>
+                <th>Leto</th>
+                <th>Status</th>
+                <th>Datum</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((ed) => (
+                <tr key={ed.id}>
+                  <td>
+                    <Link to={`/editions/${ed.id}`}>{ed.name}</Link>
+                  </td>
+                  <td>{ed.tournament_name}</td>
+                  <td>{ed.year}</td>
+                  <td>{ed.status?.name ?? ed.status?.code ?? "—"}</td>
+                  <td>
+                    {ed.start_date} → {ed.end_date}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </div>
   );

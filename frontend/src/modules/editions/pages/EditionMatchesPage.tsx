@@ -574,7 +574,7 @@ export function EditionMatchesPage() {
                       <td>
                         <Link to={`/matches/${match.id}`}>Detail</Link>
                         {" · "}
-                        <Link to={`/live/matches/${match.id}`}>Live</Link>
+                        <Link to={`/dashboard_admin/live/matches/${match.id}`}>Live</Link>
                       </td>
                     </tr>
                   ))}

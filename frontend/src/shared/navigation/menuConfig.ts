@@ -26,6 +26,8 @@ export const MENU_CONFIG: MenuItemConfig[] = [
   { id: "tournaments", label: "Turnirji", path: "/tournaments", access: "public" },
   { id: "live", label: "Live", path: "/live", access: "public" },
   { id: "stats", label: "Statistika", path: "/stats", access: "public" },
+  { id: "persons", label: "Osebe", path: "/persons", access: "public" },
+  { id: "teams", label: "Ekipe", path: "/teams", access: "public" },
   {
     id: "manage",
     label: "Upravljanje",

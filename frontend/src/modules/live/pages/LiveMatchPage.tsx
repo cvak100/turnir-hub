@@ -2,146 +2,66 @@
 import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
-  IntegerStepper,
   PageHeader,
   StateMessage,
 } from "@/shared/components";
-import { useAuth } from "@/shared/auth";
 import {
-  eventTypeService,
   matchEventService,
   matchService,
-  matchStatusService,
-  phaseService,
-  type EventTypeRef,
   type MatchDetail,
   type MatchEventListItem,
-  type MatchStatusItem,
 } from "@/modules/matches/services/matchService";
 import {
   participationPlayerService,
   type TeamParticipationPlayerListItem,
 } from "@/modules/players/services/playerService";
-import { editionService } from "@/modules/editions/services/editionService";
-import { eventLabelWithIcon } from "../eventIcons";
+import { eventIcon, eventLabelWithIcon } from "../eventIcons";
 import {
-  ConfirmEventModal,
-  isPrimaryEventType,
   playerLabel,
   sortEventsForTimeline,
-  useMatchClock,
-  type SelectedActor,
 } from "../components/LiveEventEditor";
 import {
   eventHalfForStatus,
   halfDisplayLabel,
+  halfSortKey,
   isFinishedMatchStatus,
   isLiveMatchStatus,
-  isScheduledMatchStatus,
-  LIVE_QUICK_STATUS_CODES,
-  matchMinuteFromPeriod,
-  periodMaxMinutes,
 } from "../matchStatuses";
 import {
   useMatchWebSocket,
   type MatchUpdateMessage,
 } from "../hooks/useMatchWebSocket";
-import { ResolveTemporaryPlayerModal } from "../components/ResolveTemporaryPlayerModal";
 import { upsertEventFromWs } from "../services/liveService";
-
-function normalizeList<T>(payload: unknown): T[] {
-  if (Array.isArray(payload)) return payload as T[];
-  if (
-    payload &&
-    typeof payload === "object" &&
-    Array.isArray((payload as { results?: unknown }).results)
-  ) {
-    return (payload as { results: T[] }).results;
-  }
-  return [];
-}
 
 export function LiveMatchPage() {
   const { id } = useParams();
   const matchId = Number(id);
-  const { hasPermission, isAdmin } = useAuth();
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [events, setEvents] = useState<MatchEventListItem[]>([]);
-  const [eventTypes, setEventTypes] = useState<EventTypeRef[]>([]);
-  const [matchStatuses, setMatchStatuses] = useState<MatchStatusItem[]>([]);
   const [homeRoster, setHomeRoster] = useState<TeamParticipationPlayerListItem[]>(
     [],
   );
   const [awayRoster, setAwayRoster] = useState<TeamParticipationPlayerListItem[]>(
     [],
   );
-  const [editionId, setEditionId] = useState<number | null>(null);
-  const [halfDurationMinutes, setHalfDurationMinutes] = useState<number | null>(
-    null,
-  );
-  const [matchDurationMinutes, setMatchDurationMinutes] = useState<
-    number | null
-  >(null);
-  const [numberOfHalves, setNumberOfHalves] = useState<number | null>(null);
-  const [extraTimeMinutes, setExtraTimeMinutes] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
-  const [actionError, setActionError] = useState<unknown>(null);
-  const [busy, setBusy] = useState(false);
 
   const statusCode = match?.status?.code ?? "";
   const half = eventHalfForStatus(statusCode);
-  const clockHalf = half === "penalties" ? "2" : half;
-  const clockMaxMinutes = periodMaxMinutes({
-    half: clockHalf,
-    halfDurationMinutes,
-    matchDurationMinutes: match?.duration_minutes ?? matchDurationMinutes,
-    numberOfHalves,
-    extraTimeMinutes,
-  });
-  const clock = useMatchClock(matchId, clockHalf, clockMaxMinutes);
-  const [selected, setSelected] = useState<SelectedActor | null>(null);
-  const [pendingType, setPendingType] = useState<EventTypeRef | null>(null);
-  const [pendingMinute, setPendingMinute] = useState(0);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const [shootoutStarters, setShootoutStarters] = useState("5");
-  const [unknownSide, setUnknownSide] = useState<"home" | "away" | null>(null);
-  const [unknownLabel, setUnknownLabel] = useState("");
-  const [resolveEvent, setResolveEvent] = useState<MatchEventListItem | null>(
-    null,
-  );
+  const isLive = isLiveMatchStatus(statusCode);
+  const isFinished = isFinishedMatchStatus(statusCode);
+  const inPenalties =
+    statusCode === "match_penalties" || match?.is_penalties === true;
 
   const loadAll = useCallback(async () => {
-    const [matchData, eventsData, types, statuses] = await Promise.all([
+    const [matchData, eventsData] = await Promise.all([
       matchService.get(matchId),
       matchEventService.list({ match: matchId, page_size: 500 }),
-      eventTypeService.list(),
-      matchStatusService.list(),
     ]);
-    const phase = await phaseService.get(matchData.tournament_phase);
     setMatch(matchData);
     setEvents(eventsData.results);
-    setEventTypes(normalizeList<EventTypeRef>(types));
-    setMatchStatuses(normalizeList<MatchStatusItem>(statuses));
-    setEditionId(phase.tournament_edition);
-
-    try {
-      const edition = await editionService.get(phase.tournament_edition);
-      const rule = edition.global_rule_template;
-      setHalfDurationMinutes(
-        edition.format_config?.half_duration_minutes ?? null,
-      );
-      setMatchDurationMinutes(rule?.match_duration_minutes ?? null);
-      setNumberOfHalves(rule?.number_of_halves ?? 2);
-      setExtraTimeMinutes(rule?.extra_time_minutes ?? null);
-    } catch {
-      setHalfDurationMinutes(null);
-      setMatchDurationMinutes(null);
-      setNumberOfHalves(2);
-      setExtraTimeMinutes(null);
-    }
 
     const [home, away] = await Promise.all([
       matchData.home_team_participation
@@ -208,7 +128,7 @@ export function LiveMatchPage() {
   );
 
   const onReconnect = useCallback(() => {
-    void loadAll().catch(setActionError);
+    void loadAll().catch(setError);
   }, [loadAll]);
 
   useMatchWebSocket({
@@ -217,43 +137,6 @@ export function LiveMatchPage() {
     onMessage: onWsMessage,
     onReconnect,
   });
-
-  const canAdd = isAdmin || hasPermission("match.event.add", editionId);
-  const canEdit = isAdmin || hasPermission("match.event.edit", editionId);
-  const canDelete = isAdmin || hasPermission("match.event.delete", editionId);
-  const canFinish = isAdmin || hasPermission("match.finish", editionId);
-  const canLive = isAdmin || hasPermission("match.live.manage", editionId);
-
-  const isLive = isLiveMatchStatus(statusCode);
-  const isFinished = isFinishedMatchStatus(statusCode);
-  const isScheduled = isScheduledMatchStatus(statusCode);
-  const canEnterEvents = (isLive || isFinished) && (canAdd || canEdit);
-  const inPenalties =
-    statusCode === "match_penalties" || match?.is_penalties === true;
-  const clockFrozen =
-    statusCode === "match_halftime" || inPenalties || isFinished;
-
-  const displayMatchMinute = matchMinuteFromPeriod({
-    half: clockHalf,
-    periodMinute: clock.suggestedMinute,
-    halfDurationMinutes,
-    matchDurationMinutes: match?.duration_minutes ?? matchDurationMinutes,
-    numberOfHalves,
-    extraTimeMinutes,
-  });
-
-  useEffect(() => {
-    if (clockFrozen && clock.running) {
-      clock.pause();
-    }
-  }, [clockFrozen, clock.running, clock.pause]);
-
-  const quickStatuses = useMemo(() => {
-    const byCode = new Map(matchStatuses.map((s) => [s.code, s]));
-    return LIVE_QUICK_STATUS_CODES.map((code) => byCode.get(code)).filter(
-      (s): s is MatchStatusItem => Boolean(s),
-    );
-  }, [matchStatuses]);
 
   const homeEvents = useMemo(
     () =>
@@ -275,8 +158,7 @@ export function LiveMatchPage() {
   );
 
   const shootoutEvents = useMemo(
-    () =>
-      sortEventsForTimeline(events.filter((e) => e.half === "penalties")),
+    () => sortEventsForTimeline(events.filter((e) => e.half === "penalties")),
     [events],
   );
 
@@ -298,238 +180,48 @@ export function LiveMatchPage() {
     return "—";
   }
 
-  function selectPlayer(
-    side: "home" | "away",
-    row: TeamParticipationPlayerListItem,
-  ) {
-    const participationId =
-      side === "home"
-        ? match?.home_team_participation
-        : match?.away_team_participation;
-    if (participationId == null) return;
-    setSelected({
-      teamParticipationId: participationId,
-      side,
-      playerId: row.player.id,
-      isTemporary: false,
-      label: "",
-      displayName: `${row.jersey_number ?? "—"} ${playerLabel(row.player.person)}`,
-    });
-  }
-
-  function confirmUnknown() {
-    if (!unknownSide || !unknownLabel.trim() || !match) return;
-    const participationId =
-      unknownSide === "home"
-        ? match.home_team_participation
-        : match.away_team_participation;
-    if (participationId == null) return;
-    setSelected({
-      teamParticipationId: participationId,
-      side: unknownSide,
-      playerId: null,
-      isTemporary: true,
-      label: unknownLabel.trim(),
-      displayName: unknownLabel.trim(),
-    });
-    setUnknownSide(null);
-    setUnknownLabel("");
-  }
-
-  function onActionClick(type: EventTypeRef) {
-    if (!canEnterEvents || !canAdd) return;
-    if (inPenalties) return;
-    if (!selected) {
-      setActionError("Najprej izberi igralca (ali neznanega igralca).");
-      return;
-    }
-    setActionError(null);
-    setPendingType(type);
-    setPendingMinute(
-      matchMinuteFromPeriod({
-        half,
-        periodMinute: clock.minuteFromTimer(),
-        halfDurationMinutes,
-        matchDurationMinutes: match?.duration_minutes ?? matchDurationMinutes,
-        numberOfHalves,
-        extraTimeMinutes,
-      }),
-    );
-    setConfirmOpen(true);
-  }
-
-  function cancelPenalties() {
-    return setMatchStatus("match_second_half");
-  }
-
-  async function startMatch() {
-    setBusy(true);
-    setActionError(null);
-    try {
-      const updated = await matchService.start(matchId);
-      setMatch(updated);
-      clock.reset();
-      clock.start();
-    } catch (err) {
-      setActionError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function reopenMatch() {
-    setBusy(true);
-    setActionError(null);
-    try {
-      const updated = await matchService.reopen(matchId);
-      setMatch(updated);
-    } catch (err) {
-      setActionError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function setMatchStatus(code: string) {
-    if (code === "match_finished") {
-      const home = match?.home_team_name ?? "Domači";
-      const away = match?.away_team_name ?? "Gostje";
-      const score = `${match?.home_score ?? 0}:${match?.away_score ?? 0}`;
-      const ok = window.confirm(
-        `Res želiš KONČATI tekmo?\n\n${home} ${score} ${away}`,
-      );
-      if (!ok) return;
-    }
-    if (
-      code === "match_halftime" ||
-      code === "match_finished" ||
-      code === "match_penalties"
-    ) {
-      clock.pause();
-    }
-    setBusy(true);
-    setActionError(null);
-    try {
-      const updated = await matchService.setStatus(matchId, code);
-      setMatch(updated);
-      if (
-        code === "match_finished" ||
-        code === "match_halftime" ||
-        code === "match_penalties"
-      ) {
-        clock.pause();
-      }
-    } catch (err) {
-      setActionError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function recordShootoutKick(
-    side: "home" | "away",
-    scored: boolean,
-  ) {
-    if (!match || !canAdd) return;
-    const participationId =
-      side === "home"
-        ? match.home_team_participation
-        : match.away_team_participation;
-    if (participationId == null) return;
-    const type = eventTypes.find(
-      (t) => t.code === (scored ? "penalty_scored" : "penalty_missed"),
-    );
-    if (!type) {
-      setActionError("Manjka EventType za penali (seed_event_types).");
-      return;
-    }
-    const nextMinute =
-      shootoutEvents.reduce((max, e) => Math.max(max, e.minute), 0) + 1;
-    setBusy(true);
-    setActionError(null);
-    try {
-      await matchEventService.create({
-        match: matchId,
-        event_type: type.id,
-        team_participation: participationId,
-        minute: nextMinute,
-        half: "penalties",
-        player: null,
-        is_temporary_player: false,
-        temporary_player_label: "",
-      });
-      await loadAll();
-    } catch (err) {
-      setActionError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function deleteEvent(eventId: number) {
-    if (!canDelete) return;
-    if (!window.confirm("Izbrišem ta dogodek?")) return;
-    setBusy(true);
-    setActionError(null);
-    try {
-      await matchEventService.delete(eventId);
-      await loadAll();
-    } catch (err) {
-      setActionError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-
-  async function refreshFromEvents() {
-    setBusy(true);
-    setActionError(null);
-    try {
-      const updated = await matchService.recalculate(matchId);
-      setMatch(updated);
-      await loadAll();
-    } catch (err) {
-      setActionError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const starters = Number.parseInt(shootoutStarters, 10) || 5;
-  const nextKickIndex = shootoutEvents.length + 1;
-  const nextKickSide: "home" | "away" =
-    nextKickIndex % 2 === 1 ? "home" : "away";
+  const lastMinute = useMemo(() => {
+    const regular = events.filter((e) => e.half !== "penalties");
+    if (regular.length === 0) return null;
+    return Math.max(...regular.map((e) => e.minute));
+  }, [events]);
 
   if (!Number.isFinite(matchId)) {
-    return <StateMessage variant="error" message="Invalid match id." />;
+    return <StateMessage variant="error" message="Neveljaven id tekme." />;
   }
 
   return (
     <div className="page live-edit-page">
       <PageHeader
-        title={isLive ? "Live Edit" : isFinished ? "Normal Edit" : "Tekma"}
+        title={
+          match
+            ? `${match.home_team_name ?? "TBD"} vs ${match.away_team_name ?? "TBD"}`
+            : "Live tekma"
+        }
+        subtitle={
+          isLive ? "V živo" : isFinished ? "Končana" : match?.status?.name || "Tekma"
+        }
         actions={
           <>
-            <button
-              type="button"
-              className="border-frame border-frame--sm"
-              disabled={busy || loading}
-              onClick={() => void refreshFromEvents()}
-            >
-              {busy ? "Osvežujem…" : "Refresh"}
-            </button>
+            {match?.edition_id ? (
+              <Link
+                className="button-link border-frame border-frame--sm"
+                to={`/editions/${match.edition_id}`}
+              >
+                Edicija
+              </Link>
+            ) : null}
             <Link
               className="button-link border-frame border-frame--sm"
-              to={`/matches/${matchId}`}
+              to="/live"
             >
-              Detail
+              Live
             </Link>
           </>
         }
       />
 
-      <ErrorBanner error={actionError ?? error} />
+      <ErrorBanner error={error} />
       {loading ? <StateMessage variant="loading" message="Nalagam…" /> : null}
 
       {match ? (
@@ -568,124 +260,26 @@ export function LiveMatchPage() {
             </div>
             {match.status ? (
               <p className="live-match-status">
-                {match.status.name || match.status.code}
+                {isLive ? (
+                  <span className="public-live-pill">LIVE</span>
+                ) : (
+                  match.status.name || match.status.code
+                )}
               </p>
             ) : null}
-            {!inPenalties ? (
+            {!inPenalties && (isLive || lastMinute != null) ? (
               <div className="live-clock-row">
-                <strong className="live-clock">⏱ {clock.clockLabel}</strong>
-                <span className="muted">~{displayMatchMinute}&apos;</span>
-                {clock.maxMinutes != null ? (
-                  <span className="muted">
-                    (polčas / {clock.maxMinutes}&apos;)
-                  </span>
-                ) : null}
-                {!clockFrozen ? (
-                  <>
-                    {!clock.atMax ? (
-                      <button
-                        type="button"
-                        className="border-frame border-frame--sm"
-                        onClick={() =>
-                          clock.running ? clock.pause() : clock.start()
-                        }
-                      >
-                        {clock.running ? "⏸ Pause" : "▶️ Start"}
-                      </button>
-                    ) : (
-                      <span className="muted">Konec polčasa</span>
-                    )}
-                    <button
-                      type="button"
-                      className="button-secondary border-frame border-frame--sm"
-                      onClick={clock.reset}
-                    >
-                      🔁 Reset
-                    </button>
-                  </>
-                ) : null}
+                <strong className="live-clock">
+                  {halfDisplayLabel(half)}
+                  {lastMinute != null ? ` · ${lastMinute}'` : ""}
+                </strong>
               </div>
             ) : null}
-            <div className="live-period-row">
-              {quickStatuses.map((s) => (
-                <button
-                  key={s.code}
-                  type="button"
-                  className={
-                    statusCode === s.code
-                      ? "live-period-btn live-period-btn--active border-frame border-frame--sm"
-                      : "live-period-btn border-frame border-frame--sm"
-                  }
-                  disabled={
-                    busy ||
-                    (s.code === "match_finished"
-                      ? !canFinish && !canLive
-                      : !canLive)
-                  }
-                  onClick={() => void setMatchStatus(s.code)}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
-            {quickStatuses.length === 0 ? (
-              <p className="muted">
-                Ni statusov — zaženi{" "}
-                <code>python manage.py seed_statuses</code>
-              </p>
-            ) : null}
-            <div className="row-actions">
-              {canLive && isScheduled ? (
-                <button
-                  type="button"
-                  className="live-action live-action--primary border-frame border-frame--sm"
-                  onClick={() => void startMatch()}
-                  disabled={busy}
-                >
-                  Začetek tekme
-                </button>
-              ) : null}
-              {canLive && isFinished ? (
-                <button
-                  type="button"
-                  className="live-action live-action--primary border-frame border-frame--sm"
-                  onClick={() => void reopenMatch()}
-                  disabled={busy}
-                >
-                  Nazaj v Live
-                </button>
-              ) : null}
-            </div>
           </section>
 
-          {inPenalties ? (
+          {inPenalties || shootoutEvents.length > 0 ? (
             <section className="border-frame border-frame--md live-shootout">
-              <div className="row-actions" style={{ justifyContent: "space-between" }}>
-                <h2 style={{ margin: 0 }}>Penalty shootout</h2>
-                {canLive ? (
-                  <button
-                    type="button"
-                    className="button-secondary border-frame border-frame--sm"
-                    onClick={() => void cancelPenalties()}
-                    disabled={busy}
-                  >
-                    Prekliči penale
-                  </button>
-                ) : null}
-              </div>
-              <p className="muted">
-                Zaporedje = polje minute. Goli ne grejo v statistiko igralcev.
-              </p>
-              <label>
-                Začetnih strelcev (na ekipo, informativno)
-                <IntegerStepper
-                  value={shootoutStarters}
-                  min={3}
-                  max={5}
-                  emptyMeansNull={false}
-                  onChange={setShootoutStarters}
-                />
-              </label>
+              <h2 style={{ margin: 0 }}>Penalty shootout</h2>
               <ol className="plain-list">
                 {shootoutEvents.map((e) => (
                   <li key={e.id}>
@@ -694,374 +288,151 @@ export function LiveMatchPage() {
                       ? "Domači"
                       : "Gostje"}{" "}
                     · {eventLabelWithIcon(e.event_type.code, e.event_type.name)}
-                    {canDelete ? (
-                      <>
-                        {" "}
-                        <button
-                          type="button"
-                          className="linkish"
-                          onClick={() => void deleteEvent(e.id)}
-                        >
-                          Izbriši
-                        </button>
-                      </>
-                    ) : null}
                   </li>
                 ))}
               </ol>
-              {canAdd && (isLive || isFinished) ? (
-                <div className="live-shootout-kick">
-                  <p>
-                    Zaporedje {nextKickIndex}:{" "}
-                    <strong>
-                      {nextKickSide === "home" ? "Domači" : "Gostje"}
-                    </strong>
-                    {nextKickIndex > starters * 2
-                      ? " (sudden death)"
-                      : null}
-                  </p>
-                  <div className="row-actions">
-                    <button
-                      type="button"
-                      className="live-action live-action--primary border-frame border-frame--sm"
-                      disabled={busy}
-                      onClick={() => void recordShootoutKick(nextKickSide, true)}
-                    >
-                      Zadet
-                    </button>
-                    <button
-                      type="button"
-                      className="live-action border-frame border-frame--sm"
-                      disabled={busy}
-                      onClick={() =>
-                        void recordShootoutKick(nextKickSide, false)
-                      }
-                    >
-                      Zgrešen
-                    </button>
-                  </div>
-                </div>
+              {shootoutEvents.length === 0 ? (
+                <p className="muted">Še ni strelov.</p>
               ) : null}
             </section>
           ) : null}
 
           <section className="border-frame border-frame--md live-split">
             <h2>Timeline</h2>
-            <div className="live-split__cols">
-              <div>
-                <h3>{match.home_team_name ?? "Domači"}</h3>
-                <EventList
-                  events={homeEvents}
-                  labelFor={eventActorLabel}
-                  canDelete={canDelete}
-                  canResolveTemp={canEdit}
-                  onDelete={deleteEvent}
-                  onResolveTemp={setResolveEvent}
-                />
-              </div>
-              <div>
-                <h3>{match.away_team_name ?? "Gostje"}</h3>
-                <EventList
-                  events={awayEvents}
-                  labelFor={eventActorLabel}
-                  canDelete={canDelete}
-                  canResolveTemp={canEdit}
-                  onDelete={deleteEvent}
-                  onResolveTemp={setResolveEvent}
-                />
-              </div>
+            <div className="live-split-heads">
+              <h3>{match.home_team_name ?? "Domači"}</h3>
+              <h3>{match.away_team_name ?? "Gostje"}</h3>
             </div>
+            <SharedTimeline
+              homeEvents={homeEvents}
+              awayEvents={awayEvents}
+              labelFor={eventActorLabel}
+            />
           </section>
 
           <section className="border-frame border-frame--md live-split">
             <h2>Igralci</h2>
-            {selected ? (
-              <p className="live-selected">
-                Izbran: <strong>{selected.displayName}</strong> (
-                {selected.side === "home" ? "domači" : "gostje"}){" "}
-                <button
-                  type="button"
-                  className="linkish"
-                  onClick={() => setSelected(null)}
-                >
-                  Počisti
-                </button>
-              </p>
-            ) : (
-              <p className="muted">Najprej izberi igralca, nato akcijo.</p>
-            )}
-            <div className="live-split__cols">
-              <RosterColumn
-                title={match.home_team_name ?? "Domači"}
-                roster={homeRoster}
-                selectedPlayerId={
-                  selected?.side === "home" && !selected.isTemporary
-                    ? selected.playerId
-                    : null
-                }
-                disabled={!canEnterEvents}
-                onSelect={(row) => selectPlayer("home", row)}
-                onUnknown={() => {
-                  setUnknownSide("home");
-                  setUnknownLabel("Neznani #");
-                }}
-              />
-              <RosterColumn
-                title={match.away_team_name ?? "Gostje"}
-                roster={awayRoster}
-                selectedPlayerId={
-                  selected?.side === "away" && !selected.isTemporary
-                    ? selected.playerId
-                    : null
-                }
-                disabled={!canEnterEvents}
-                onSelect={(row) => selectPlayer("away", row)}
-                onUnknown={() => {
-                  setUnknownSide("away");
-                  setUnknownLabel("Neznani #");
-                }}
-              />
+            <div className="live-split-heads">
+              <h3>{match.home_team_name ?? "Domači"}</h3>
+              <h3>{match.away_team_name ?? "Gostje"}</h3>
+            </div>
+            <div className="live-split__cols live-roster-cols">
+              <PublicRosterColumn roster={homeRoster} />
+              <PublicRosterColumn roster={awayRoster} />
             </div>
           </section>
-
-          {!inPenalties ? (
-            <section className="border-frame border-frame--md live-actions">
-              <h2>Akcije</h2>
-              {!canEnterEvents ? (
-                <p className="muted">
-                  {isScheduled
-                    ? "Najprej pritisni Začetek tekme."
-                    : !canAdd
-                      ? "Nimaš dovoljenja match.event.add — prijavi se kot admin."
-                      : "Dogodkov trenutno ni mogoče vnašati."}
-                </p>
-              ) : null}
-              {canEnterEvents && eventTypes.length === 0 ? (
-                <p className="muted">
-                  Ni tipov dogodkov. V backendu zaženi:{" "}
-                  <code>python manage.py seed_event_types</code>
-                </p>
-              ) : null}
-              {canEnterEvents && eventTypes.length > 0 ? (
-                <div className="live-actions__grid">
-                  {eventTypes.map((type) => (
-                    <button
-                      key={type.id}
-                      type="button"
-                      className={
-                        isPrimaryEventType(type.code)
-                          ? "live-action live-action--primary border-frame border-frame--sm"
-                          : "live-action border-frame border-frame--sm"
-                      }
-                      disabled={!canAdd || busy}
-                      onClick={() => onActionClick(type)}
-                    >
-                      {eventLabelWithIcon(type.code, type.name)}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </section>
-          ) : null}
-
         </>
       ) : null}
-
-      {unknownSide ? (
-        <div
-          className="live-modal-backdrop"
-          role="presentation"
-          onClick={() => setUnknownSide(null)}
-        >
-          <div
-            className="live-modal border-frame border-frame--md"
-            role="dialog"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3>Neznani igralec</h3>
-            <label className="stack-form">
-              Oznaka
-              <input
-                value={unknownLabel}
-                onChange={(e) => setUnknownLabel(e.target.value)}
-                placeholder="Neznani #9"
-                autoFocus
-              />
-            </label>
-            <div className="row-actions">
-              <button
-                type="button"
-                className="border-frame border-frame--sm"
-                onClick={confirmUnknown}
-              >
-                Izberi
-              </button>
-              <button
-                type="button"
-                className="button-secondary border-frame border-frame--sm"
-                onClick={() => setUnknownSide(null)}
-              >
-                Prekliči
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <ResolveTemporaryPlayerModal
-        open={resolveEvent != null}
-        event={resolveEvent}
-        editionId={editionId}
-        onClose={() => setResolveEvent(null)}
-        onLinked={() => {
-          void loadAll().catch(setActionError);
-        }}
-      />
-
-      <ConfirmEventModal
-        open={confirmOpen}
-        matchId={matchId}
-        eventType={pendingType}
-        actor={selected}
-        suggestedMinute={pendingMinute}
-        half={half}
-        onClose={() => {
-          setConfirmOpen(false);
-          setPendingType(null);
-        }}
-        onSaved={() => {
-          void loadAll().catch(setActionError);
-        }}
-      />
     </div>
   );
 }
 
-function EventList({
-  events,
+function SharedTimeline({
+  homeEvents,
+  awayEvents,
   labelFor,
-  canDelete,
-  canResolveTemp,
-  onDelete,
-  onResolveTemp,
 }: {
-  events: MatchEventListItem[];
+  homeEvents: MatchEventListItem[];
+  awayEvents: MatchEventListItem[];
   labelFor: (e: MatchEventListItem) => string;
-  canDelete: boolean;
-  canResolveTemp: boolean;
-  onDelete: (id: number) => void;
-  onResolveTemp: (event: MatchEventListItem) => void;
 }) {
-  if (events.length === 0) {
+  const halves = useMemo(() => {
+    const keys = new Set<string>();
+    for (const e of [...homeEvents, ...awayEvents]) {
+      if (e.half === "penalties") continue;
+      keys.add(e.half || "1");
+    }
+    return [...keys].sort((a, b) => halfSortKey(a) - halfSortKey(b));
+  }, [homeEvents, awayEvents]);
+
+  if (halves.length === 0) {
     return <p className="muted">Ni dogodkov.</p>;
   }
 
-  const sections: { half: string; items: MatchEventListItem[] }[] = [];
-  for (const e of events) {
-    const h = e.half || "1";
-    const last = sections[sections.length - 1];
-    if (!last || last.half !== h) {
-      sections.push({ half: h, items: [e] });
-    } else {
-      last.items.push(e);
-    }
-  }
-
   return (
-    <ul className="live-timeline-list">
-      {sections.map((section) => (
-        <li key={`half-${section.half}`} className="live-timeline-section">
-          <div className="live-timeline-half">
-            {halfDisplayLabel(section.half)}
+    <div className="live-timeline-shared">
+      {halves.map((half) => {
+        const home = homeEvents.filter((e) => (e.half || "1") === half);
+        const away = awayEvents.filter((e) => (e.half || "1") === half);
+        return (
+          <div key={half} className="live-timeline-band">
+            <div className="live-timeline-half live-timeline-half--full">
+              {halfDisplayLabel(half)}
+            </div>
+            <div className="live-split__cols">
+              <div className="live-timeline-col live-timeline-col--home">
+                <HalfEventItems events={home} labelFor={labelFor} />
+              </div>
+              <div className="live-timeline-col live-timeline-col--away">
+                <HalfEventItems events={away} labelFor={labelFor} />
+              </div>
+            </div>
           </div>
-          <ul className="live-timeline-half-events">
-            {section.items.map((e) => (
-              <li key={e.id}>
-                <strong>
-                  {e.minute}
-                  {e.extra_minute != null ? `+${e.extra_minute}` : ""}&apos;
-                </strong>{" "}
-                {eventLabelWithIcon(e.event_type.code, e.event_type.name)}{" "}
-                {e.is_temporary_player && canResolveTemp ? (
-                  <button
-                    type="button"
-                    className="linkish"
-                    onClick={() => onResolveTemp(e)}
-                  >
-                    {labelFor(e)}
-                  </button>
-                ) : (
-                  labelFor(e)
-                )}
-                {e.is_own_goal ? " (AG)" : ""}
-                {canDelete ? (
-                  <>
-                    {" "}
-                    <button
-                      type="button"
-                      className="linkish"
-                      onClick={() => onDelete(e.id)}
-                    >
-                      ×
-                    </button>
-                  </>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+        );
+      })}
+    </div>
+  );
+}
+
+function HalfEventItems({
+  events,
+  labelFor,
+}: {
+  events: MatchEventListItem[];
+  labelFor: (e: MatchEventListItem) => string;
+}) {
+  if (events.length === 0) {
+    return <p className="muted live-timeline-empty">—</p>;
+  }
+  return (
+    <ul className="live-timeline-half-events">
+      {events.map((e) => (
+        <li key={e.id}>
+          <strong>
+            {e.minute}
+            {e.extra_minute != null ? `+${e.extra_minute}` : ""}&apos;
+          </strong>{" "}
+          {eventIcon(e.event_type.code)}{" "}
+          {e.player != null ? (
+            <Link className="live-player-link" to={`/players/${e.player}`}>
+              {labelFor(e)}
+            </Link>
+          ) : (
+            labelFor(e)
+          )}
+          {e.is_own_goal ? " (AG)" : ""}
         </li>
       ))}
     </ul>
   );
 }
 
-function RosterColumn({
-  title,
+function PublicRosterColumn({
   roster,
-  selectedPlayerId,
-  disabled,
-  onSelect,
-  onUnknown,
 }: {
-  title: string;
   roster: TeamParticipationPlayerListItem[];
-  selectedPlayerId: number | null;
-  disabled: boolean;
-  onSelect: (row: TeamParticipationPlayerListItem) => void;
-  onUnknown: () => void;
 }) {
   return (
     <div>
-      <h3>{title}</h3>
-      <ul className="live-roster-list">
-        {roster.map((row) => (
-          <li key={row.id}>
-            <button
-              type="button"
-              className={
-                selectedPlayerId === row.player.id
-                  ? "live-roster-btn live-roster-btn--active border-frame border-frame--sm"
-                  : "live-roster-btn border-frame border-frame--sm"
-              }
-              disabled={disabled}
-              onClick={() => onSelect(row)}
-            >
-              <span className="live-roster-btn__num">
-                {row.jersey_number ?? "—"}
-              </span>
-              {playerLabel(row.player.person)}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <button
-        type="button"
-        className="linkish"
-        disabled={disabled}
-        onClick={onUnknown}
-      >
-        + Neznani igralec
-      </button>
+      {roster.length === 0 ? (
+        <p className="muted">Ni igralcev.</p>
+      ) : (
+        <ul className="live-roster-list">
+          {roster.map((row) => (
+            <li key={row.id}>
+              <Link
+                className="live-roster-public live-player-link"
+                to={`/players/${row.player.id}`}
+              >
+                <span className="live-roster-btn__num">
+                  {row.jersey_number ?? "—"}
+                </span>{" "}
+                {playerLabel(row.player.person)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

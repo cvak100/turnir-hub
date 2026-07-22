@@ -27,6 +27,7 @@ export interface EditionListItem {
     order: number;
   } | null;
   category?: TournamentCategoryRef | null;
+  location?: string;
   start_date: string;
   end_date: string;
   is_public: boolean;

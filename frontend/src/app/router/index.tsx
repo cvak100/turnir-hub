@@ -32,14 +32,17 @@ import { EditionPlayersPage } from "@/modules/editions/pages/EditionPlayersPage"
 import { EditionTeamsPage } from "@/modules/editions/pages/EditionTeamsPage";
 import { HomePage } from "@/modules/home/pages/HomePage";
 import { LiveIndexPage } from "@/modules/live/pages/LiveIndexPage";
+import { LiveMatchManagePage } from "@/modules/live/pages/LiveMatchManagePage";
 import { LiveMatchPage } from "@/modules/live/pages/LiveMatchPage";
 import { ManagePage } from "@/modules/manage/pages/ManagePage";
 import { MatchDetailPage } from "@/modules/matches/pages/MatchDetailPage";
+import { PublicMatchPage } from "@/modules/matches/pages/PublicMatchPage";
 import { MatchEventEditPage } from "@/modules/matches/pages/MatchEventEditPage";
 import { PlayerCreatePage } from "@/modules/players/pages/PlayerCreatePage";
 import { PlayerDetailPage } from "@/modules/players/pages/PlayerDetailPage";
 import { PlayerEditPage } from "@/modules/players/pages/PlayerEditPage";
 import { PlayerListPage } from "@/modules/players/pages/PlayerListPage";
+import { PersonsPublicPage } from "@/modules/public/pages/PersonsPublicPage";
 import { StatsPage } from "@/modules/stats/pages/StatsPage";
 import { TeamCreatePage } from "@/modules/teams/pages/TeamCreatePage";
 import { TeamDetailPage } from "@/modules/teams/pages/TeamDetailPage";
@@ -84,6 +87,10 @@ export function AppRouter() {
                 <Route
                   path="/dashboard_admin/matches"
                   element={<MatchesAdminPage />}
+                />
+                <Route
+                  path="/dashboard_admin/live/matches/:id"
+                  element={<LiveMatchManagePage />}
                 />
                 <Route
                   path="/dashboard_admin/persons"
@@ -158,43 +165,48 @@ export function AppRouter() {
               <Route path="/editions/:id/edit" element={<EditionEditPage />} />
               <Route path="/teams/new" element={<TeamCreatePage />} />
               <Route path="/players/new" element={<PlayerCreatePage />} />
+              <Route
+                path="/editions/:id/teams"
+                element={<EditionTeamsPage />}
+              />
+              <Route
+                path="/editions/:id/players"
+                element={<EditionPlayersPage />}
+              />
+              <Route
+                path="/editions/:id/phases"
+                element={<EditionPhasesPage />}
+              />
+              <Route
+                path="/editions/:id/matches"
+                element={<EditionMatchesPage />}
+              />
+              <Route
+                path="/editions/:id/events"
+                element={<EditionEventsPage />}
+              />
+              <Route
+                path="/editions/:id/finish"
+                element={<EditionFinishPage />}
+              />
+              <Route path="/matches/:id/edit" element={<MatchDetailPage />} />
+              <Route
+                path="/match-events/:eventId/edit"
+                element={<MatchEventEditPage />}
+              />
+              <Route path="/players/:id/edit" element={<PlayerEditPage />} />
             </Route>
 
             <Route path="/editions/:id" element={<EditionDetailPage />} />
-            <Route path="/editions/:id/teams" element={<EditionTeamsPage />} />
-            <Route
-              path="/editions/:id/players"
-              element={<EditionPlayersPage />}
-            />
-            <Route
-              path="/editions/:id/phases"
-              element={<EditionPhasesPage />}
-            />
-            <Route
-              path="/editions/:id/matches"
-              element={<EditionMatchesPage />}
-            />
-            <Route
-              path="/editions/:id/events"
-              element={<EditionEventsPage />}
-            />
-            <Route
-              path="/editions/:id/finish"
-              element={<EditionFinishPage />}
-            />
 
             <Route path="/teams" element={<TeamListPage />} />
             <Route path="/teams/:id" element={<TeamDetailPage />} />
 
+            <Route path="/persons" element={<PersonsPublicPage />} />
             <Route path="/players" element={<PlayerListPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
-            <Route path="/players/:id/edit" element={<PlayerEditPage />} />
 
-            <Route path="/matches/:id" element={<MatchDetailPage />} />
-            <Route
-              path="/match-events/:eventId/edit"
-              element={<MatchEventEditPage />}
-            />
+            <Route path="/matches/:id" element={<PublicMatchPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

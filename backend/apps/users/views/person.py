@@ -1,12 +1,13 @@
 import django_filters
 from django.db.models import Prefetch
 from rest_framework import status, viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.users.models import Person, PersonRole
 from apps.users.permissions import HasPermission
 from apps.users.permissions.utils import set_action_permission
+from apps.users.serializers.person import PersonPublicSerializer
 from apps.users.serializers.person_full import (
     PersonCreateUpdateSerializer,
     PersonDetailSerializer,
@@ -67,6 +68,8 @@ class PersonViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         if self.action in ("create", "update", "partial_update", "destroy"):
             set_action_permission(
                 self,
@@ -81,7 +84,21 @@ class PersonViewSet(viewsets.ModelViewSet):
             return [HasPermission()]
         return [IsAuthenticated()]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if not self.request.user.is_authenticated:
+            return (
+                qs.filter(show_as_anonymous=False)
+                .filter(
+                    player__participations__team_participation__tournament_edition__is_public=True
+                )
+                .distinct()
+            )
+        return qs
+
     def get_serializer_class(self):
+        if self.action in ("list", "retrieve") and not self.request.user.is_authenticated:
+            return PersonPublicSerializer
         if self.action == "list":
             return PersonListSerializer
         if self.action in ["create", "update", "partial_update"]:

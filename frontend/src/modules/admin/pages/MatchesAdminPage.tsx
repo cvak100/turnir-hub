@@ -265,7 +265,7 @@ export function MatchesAdminPage() {
                         </Link>
                         <Link
                           className="button-link border-frame border-frame--sm"
-                          to={`/live/matches/${row.id}`}
+                          to={`/dashboard_admin/live/matches/${row.id}`}
                         >
                           Live
                         </Link>

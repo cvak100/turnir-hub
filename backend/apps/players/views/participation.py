@@ -1,6 +1,8 @@
 from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.core.utils import scope_public_or_accessible, scope_queryset_to_editions
 from apps.players.models import TeamParticipation
 from apps.players.serializers.participation import (
     TeamParticipationCreateUpdateSerializer,
@@ -20,6 +22,8 @@ class TeamParticipationViewSet(viewsets.ModelViewSet):
     ordering = ["participation_name"]
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         set_action_permission(
             self,
             {
@@ -45,8 +49,13 @@ class TeamParticipationViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(tournament_edition_id=edition)
-        from apps.core.utils import scope_queryset_to_editions
-
+        if self.action in ("list", "retrieve"):
+            return scope_public_or_accessible(
+                self.request.user,
+                qs,
+                public_lookup="tournament_edition__is_public",
+                edition_lookup="tournament_edition_id",
+            )
         return scope_queryset_to_editions(
             self.request.user,
             qs,

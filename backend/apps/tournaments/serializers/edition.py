@@ -48,6 +48,7 @@ class TournamentEditionListSerializer(serializers.ModelSerializer):
             "status",
             "format",
             "category",
+            "location",
             "start_date",
             "end_date",
             "is_public",

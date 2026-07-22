@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from apps.core.utils import scope_queryset_to_editions
+from apps.core.utils import scope_public_or_accessible, scope_queryset_to_editions
 from apps.core.views.catalog import AdminWritableCatalogMixin
 from apps.matches.models import EventType, Match, MatchEvent, MatchStatus
 from apps.matches.serializers.match import (
@@ -93,12 +93,11 @@ class MatchViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(tournament_phase__tournament_edition_id=edition)
-        if not self.request.user.is_authenticated:
-            return qs.filter(tournament_phase__tournament_edition__is_public=True)
-        return scope_queryset_to_editions(
+        return scope_public_or_accessible(
             self.request.user,
             qs,
-            "tournament_phase__tournament_edition_id",
+            public_lookup="tournament_phase__tournament_edition__is_public",
+            edition_lookup="tournament_phase__tournament_edition_id",
         )
 
     def get_serializer_class(self):
@@ -307,14 +306,11 @@ class MatchEventViewSet(viewsets.ModelViewSet):
             qs = qs.filter(
                 match__tournament_phase__tournament_edition__tournament_id=tournament
             )
-        if not self.request.user.is_authenticated:
-            return qs.filter(
-                match__tournament_phase__tournament_edition__is_public=True
-            )
-        return scope_queryset_to_editions(
+        return scope_public_or_accessible(
             self.request.user,
             qs,
-            "match__tournament_phase__tournament_edition_id",
+            public_lookup="match__tournament_phase__tournament_edition__is_public",
+            edition_lookup="match__tournament_phase__tournament_edition_id",
         )
 
     def get_serializer_class(self):

@@ -1,7 +1,9 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.core.utils import scope_public_or_accessible
 from apps.tournaments.models import (
     TournamentPhase,
     TournamentPhaseGroup,
@@ -35,6 +37,8 @@ class TournamentPhaseViewSet(viewsets.ModelViewSet):
     ordering = ["order"]
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         set_action_permission(
             self,
             {
@@ -49,9 +53,6 @@ class TournamentPhaseViewSet(viewsets.ModelViewSet):
             },
             default="phase.manage",
         )
-        # Allow viewing with edition.view as fallback for list/retrieve
-        if self.action in ["list", "retrieve"]:
-            self.required_permission = "edition.view"
         return super().get_permissions()
 
     def get_queryset(self):
@@ -59,6 +60,13 @@ class TournamentPhaseViewSet(viewsets.ModelViewSet):
         edition = self.request.query_params.get("tournament_edition")
         if edition:
             qs = qs.filter(tournament_edition_id=edition)
+        if self.action in ("list", "retrieve"):
+            return scope_public_or_accessible(
+                self.request.user,
+                qs,
+                public_lookup="tournament_edition__is_public",
+                edition_lookup="tournament_edition_id",
+            )
         from apps.core.utils import scope_queryset_to_editions
 
         return scope_queryset_to_editions(

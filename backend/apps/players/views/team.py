@@ -1,4 +1,5 @@
 from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.players.models import Team
@@ -21,6 +22,8 @@ class TeamViewSet(viewsets.ModelViewSet):
     ordering = ["name"]
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         set_action_permission(
             self,
             {
@@ -34,6 +37,17 @@ class TeamViewSet(viewsets.ModelViewSet):
             default="team.view",
         )
         return super().get_permissions()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.action in ("list", "retrieve"):
+            # Public list: teams that appear on at least one public edition,
+            # or all teams when user has full access via authenticated manage flows.
+            if not self.request.user.is_authenticated:
+                return qs.filter(
+                    participations__tournament_edition__is_public=True
+                ).distinct()
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":

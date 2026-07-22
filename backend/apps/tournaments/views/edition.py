@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from apps.core.utils import scope_queryset_to_editions
+from apps.core.utils import scope_public_or_accessible
 from apps.matches.serializers.match import MatchListSerializer
 from apps.tournaments.models import TournamentEdition
 from apps.tournaments.serializers.edition import (
@@ -73,9 +73,12 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
         fmt = self.request.query_params.get("format")
         if fmt:
             qs = qs.filter(format_id=fmt)
-        if not self.request.user.is_authenticated:
-            return qs.filter(is_public=True)
-        return scope_queryset_to_editions(self.request.user, qs, "id")
+        return scope_public_or_accessible(
+            self.request.user,
+            qs,
+            public_lookup="is_public",
+            edition_lookup="id",
+        )
 
     def get_serializer_class(self):
         if self.action == "list":

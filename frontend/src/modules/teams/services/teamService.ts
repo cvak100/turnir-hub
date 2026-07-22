@@ -63,11 +63,14 @@ export type TeamParticipationInput = {
 
 export const teamService = {
   list(params?: QueryParams) {
-    return api.get<PaginatedResponse<TeamListItem>>("/teams/", { params });
+    return api.get<PaginatedResponse<TeamListItem>>("/teams/", {
+      params,
+      auth: false,
+    });
   },
 
   get(id: number) {
-    return api.get<TeamDetail>(`/teams/${id}/`);
+    return api.get<TeamDetail>(`/teams/${id}/`, { auth: false });
   },
 
   create(data: TeamInput) {

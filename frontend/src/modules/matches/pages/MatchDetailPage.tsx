@@ -597,7 +597,7 @@ export function MatchDetailPage() {
         actions={
           <Link
             className="button-link border-frame border-frame--sm"
-            to={`/live/matches/${matchId}`}
+            to={`/dashboard_admin/live/matches/${matchId}`}
           >
             Open live
           </Link>

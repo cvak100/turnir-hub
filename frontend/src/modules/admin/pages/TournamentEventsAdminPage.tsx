@@ -413,7 +413,7 @@ export function EventsAdminPage({
                           </Link>
                           <Link
                             className="linkish"
-                            to={`/live/matches/${e.match}`}
+                            to={`/dashboard_admin/live/matches/${e.match}`}
                           >
                             Live
                           </Link>

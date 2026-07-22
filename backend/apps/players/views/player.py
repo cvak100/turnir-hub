@@ -1,4 +1,5 @@
 from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.players.models import Player
@@ -36,9 +37,16 @@ class PlayerViewSet(viewsets.ModelViewSet):
                 "awards__prizes__sponsor",
                 "participations",
             )
+        if not self.request.user.is_authenticated:
+            qs = qs.filter(
+                person__show_as_anonymous=False,
+                participations__team_participation__tournament_edition__is_public=True,
+            ).distinct()
         return qs
 
     def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
         set_action_permission(
             self,
             {

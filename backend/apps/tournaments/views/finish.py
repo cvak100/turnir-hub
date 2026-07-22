@@ -2,7 +2,7 @@ from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from apps.core.utils import scope_queryset_to_editions
+from apps.core.utils import scope_public_or_accessible
 from apps.core.views.catalog import AdminWritableCatalogMixin
 from apps.players.models import Award, PlayerAward
 from apps.tournaments.models import Sponsor, TournamentFinalStanding, TournamentPrize
@@ -123,10 +123,11 @@ class TournamentFinalStandingViewSet(viewsets.ModelViewSet):
             "team_participation__team",
             "tournament_edition",
         ).all()
-        if not self.request.user.is_authenticated:
-            return qs.filter(tournament_edition__is_public=True)
-        return scope_queryset_to_editions(
-            self.request.user, qs, "tournament_edition_id"
+        return scope_public_or_accessible(
+            self.request.user,
+            qs,
+            public_lookup="tournament_edition__is_public",
+            edition_lookup="tournament_edition_id",
         )
 
     def get_serializer_class(self):
@@ -162,10 +163,11 @@ class PlayerAwardViewSet(viewsets.ModelViewSet):
             "team_participation",
             "tournament_edition",
         ).all()
-        if not self.request.user.is_authenticated:
-            return qs.filter(tournament_edition__is_public=True)
-        return scope_queryset_to_editions(
-            self.request.user, qs, "tournament_edition_id"
+        return scope_public_or_accessible(
+            self.request.user,
+            qs,
+            public_lookup="tournament_edition__is_public",
+            edition_lookup="tournament_edition_id",
         )
 
     def get_serializer_class(self):
@@ -200,10 +202,11 @@ class TournamentPrizeViewSet(viewsets.ModelViewSet):
             "team_participation",
             "tournament_edition",
         ).all()
-        if not self.request.user.is_authenticated:
-            return qs.filter(tournament_edition__is_public=True)
-        return scope_queryset_to_editions(
-            self.request.user, qs, "tournament_edition_id"
+        return scope_public_or_accessible(
+            self.request.user,
+            qs,
+            public_lookup="tournament_edition__is_public",
+            edition_lookup="tournament_edition_id",
         )
 
     def get_serializer_class(self):
