@@ -2688,6 +2688,27 @@ input.sketch-check:focus-visible {
   justify-content: center;
 }
 
+.edition-standings-groups,
+.edition-standings-knockout,
+.edition-standings-final {
+  margin-top: 1rem;
+}
+
+.edition-standings-groups > h3,
+.edition-standings-knockout > h3,
+.edition-standings-final > h3 {
+  margin: 0 0 0.65rem;
+}
+
+.edition-standings-group {
+  margin-bottom: 1.15rem;
+}
+
+.edition-standings-group > h4 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+}
+
 .home-lists-section {
   margin-bottom: 1rem;
 }

@@ -95,6 +95,18 @@ class TournamentPhaseGroupTeamListSerializer(serializers.ModelSerializer):
         source="team_participation.participation_name",
         read_only=True,
     )
+    group_name = serializers.CharField(
+        source="tournament_phase_group.name",
+        read_only=True,
+    )
+    phase_name = serializers.CharField(
+        source="tournament_phase_group.tournament_phase.name",
+        read_only=True,
+    )
+    phase_type = serializers.CharField(
+        source="tournament_phase_group.tournament_phase.phase_type",
+        read_only=True,
+    )
 
     class Meta:
         model = TournamentPhaseGroupTeam
@@ -103,6 +115,9 @@ class TournamentPhaseGroupTeamListSerializer(serializers.ModelSerializer):
             "tournament_phase_group",
             "team_participation",
             "participation_name",
+            "group_name",
+            "phase_name",
+            "phase_type",
             "order",
             "played",
             "wins",

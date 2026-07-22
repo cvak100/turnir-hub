@@ -183,14 +183,24 @@ class TournamentPhaseGroupViewSet(viewsets.ModelViewSet):
     permission_classes = [HasTournamentPermission]
     filterset_fields = ["tournament_phase"]
     search_fields = ["name"]
-    ordering_fields = ["name", "created_at"]
-    ordering = ["name"]
+    ordering_fields = ["name", "created_at", "order"]
+    ordering = ["order", "name"]
 
     def get_permissions(self):
-        if self.action in ["list", "retrieve"]:
-            self.required_permission = "edition.view"
-        else:
-            self.required_permission = "phase.manage"
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
+        set_action_permission(
+            self,
+            {
+                "list": "edition.view",
+                "retrieve": "edition.view",
+                "create": "phase.manage",
+                "update": "phase.manage",
+                "partial_update": "phase.manage",
+                "destroy": "phase.manage",
+            },
+            default="phase.manage",
+        )
         return super().get_permissions()
 
     def get_queryset(self):
@@ -201,12 +211,14 @@ class TournamentPhaseGroupViewSet(viewsets.ModelViewSet):
         phase = self.request.query_params.get("tournament_phase")
         if phase:
             qs = qs.filter(tournament_phase_id=phase)
-        from apps.core.utils import scope_queryset_to_editions
-
-        return scope_queryset_to_editions(
+        edition = self.request.query_params.get("tournament_edition")
+        if edition:
+            qs = qs.filter(tournament_phase__tournament_edition_id=edition)
+        return scope_public_or_accessible(
             self.request.user,
             qs,
-            "tournament_phase__tournament_edition_id",
+            public_lookup="tournament_phase__tournament_edition__is_public",
+            edition_lookup="tournament_phase__tournament_edition_id",
         )
 
     def get_serializer_class(self):
@@ -256,27 +268,46 @@ class TournamentPhaseGroupTeamViewSet(viewsets.ModelViewSet):
     ordering = ["-points", "-goals_for"]
 
     def get_permissions(self):
-        if self.action in ["list", "retrieve"]:
-            self.required_permission = "edition.view"
-        else:
-            self.required_permission = "phase.manage"
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
+        set_action_permission(
+            self,
+            {
+                "list": "edition.view",
+                "retrieve": "edition.view",
+                "create": "phase.manage",
+                "update": "phase.manage",
+                "partial_update": "phase.manage",
+                "destroy": "phase.manage",
+            },
+            default="phase.manage",
+        )
         return super().get_permissions()
 
     def get_queryset(self):
         qs = TournamentPhaseGroupTeam.objects.select_related(
             "tournament_phase_group",
+            "tournament_phase_group__tournament_phase",
             "tournament_phase_group__tournament_phase__tournament_edition",
             "team_participation",
         ).all()
         group = self.request.query_params.get("tournament_phase_group")
         if group:
             qs = qs.filter(tournament_phase_group_id=group)
-        from apps.core.utils import scope_queryset_to_editions
-
-        return scope_queryset_to_editions(
+        edition = self.request.query_params.get("tournament_edition")
+        if edition:
+            qs = qs.filter(
+                tournament_phase_group__tournament_phase__tournament_edition_id=edition
+            )
+        return scope_public_or_accessible(
             self.request.user,
             qs,
-            "tournament_phase_group__tournament_phase__tournament_edition_id",
+            public_lookup=(
+                "tournament_phase_group__tournament_phase__tournament_edition__is_public"
+            ),
+            edition_lookup=(
+                "tournament_phase_group__tournament_phase__tournament_edition_id"
+            ),
         )
 
     def get_serializer_class(self):

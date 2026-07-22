@@ -2,6 +2,7 @@ import type { PaginatedResponse, QueryParams } from "@/shared/api";
 import { api } from "@/shared/api";
 import type { EditionDetail, EditionListItem } from "@/modules/editions/services/editionService";
 import type {
+  GroupListItem,
   MatchDetail,
   MatchEventListItem,
   MatchListItem,
@@ -59,6 +60,24 @@ export type PlayerAwardRow = {
   notes?: string;
 };
 
+export type PublicGroupTeamRow = {
+  id: number;
+  tournament_phase_group: number;
+  team_participation: number;
+  participation_name: string;
+  group_name?: string;
+  phase_name?: string;
+  phase_type?: string;
+  order: number | null;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  points: number;
+  goals_for: number;
+  goals_against: number;
+};
+
 export const publicApi = {
   listEditions(params?: QueryParams) {
     return api.get<PaginatedResponse<EditionListItem>>("/editions/", {
@@ -96,6 +115,20 @@ export const publicApi = {
     });
   },
 
+  listGroups(params?: QueryParams) {
+    return api.get<PaginatedResponse<GroupListItem>>("/groups/", {
+      params: { page_size: 100, ...params },
+      ...guest,
+    });
+  },
+
+  listGroupTeams(params?: QueryParams) {
+    return api.get<PaginatedResponse<PublicGroupTeamRow>>("/group-teams/", {
+      params: { page_size: 200, ...params },
+      ...guest,
+    });
+  },
+
   listTeams(params?: QueryParams) {
     return api.get<PaginatedResponse<TeamListItem>>("/teams/", {
       params: { page_size: 100, ...params },
@@ -117,7 +150,7 @@ export const publicApi = {
     return api.get<PaginatedResponse<TeamParticipationPlayerListItem>>(
       "/team-participation-players/",
       {
-        params: { tournament_edition: editionId, page_size: 200 },
+        params: { tournament_edition: editionId, page_size: 500 },
         ...guest,
       },
     );
@@ -151,7 +184,9 @@ export const publicApi = {
   },
 };
 
-export function normalizeList<T>(data: PaginatedResponse<T> | T[] | null | undefined): T[] {
+export function normalizeList<T>(
+  data: PaginatedResponse<T> | T[] | null | undefined,
+): T[] {
   if (!data) return [];
   if (Array.isArray(data)) return data;
   return data.results ?? [];
@@ -159,10 +194,12 @@ export function normalizeList<T>(data: PaginatedResponse<T> | T[] | null | undef
 
 export type EditionBucket = "active" | "upcoming" | "finished" | "other";
 
-export function editionBucket(statusCode: string | null | undefined): EditionBucket {
+export function editionBucket(
+  statusCode: string | null | undefined,
+): EditionBucket {
   const code = (statusCode ?? "").toLowerCase();
   if (code === "ongoing") return "active";
-  if (code === "finished") return "finished";
-  if (code === "draft" || code === "registration") return "upcoming";
+  if (code === "planned" || code === "registration") return "upcoming";
+  if (code === "finished" || code === "cancelled") return "finished";
   return "other";
 }

@@ -155,6 +155,7 @@ function ActiveEditionCard({
         <Link to={`${base}#schedule`}>Razpored</Link>
         <Link to={`${base}#teams`}>Ekipe</Link>
         <Link to={`${base}#players`}>Igralci</Link>
+        <Link to={`/stats?edition=${edition.id}`}>Statistika</Link>
       </nav>
     </article>
   );

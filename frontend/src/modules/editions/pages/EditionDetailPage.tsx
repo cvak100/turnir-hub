@@ -1,4 +1,5 @@
-﻿import { Link, useParams } from "react-router-dom";
+﻿import { useEffect, useMemo } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
@@ -6,13 +7,18 @@ import {
 } from "@/shared/components";
 import { useAsyncData } from "@/shared/hooks/useAsyncData";
 import { isLiveMatchStatus } from "@/modules/live/matchStatuses";
+import type { MatchListItem } from "@/modules/matches/services/matchService";
 import {
   normalizeList,
   publicApi,
+  type PublicGroupTeamRow,
 } from "@/modules/public/services/publicApi";
 
 function personLabel(p: {
-  player?: { person?: { first_name?: string; last_name?: string; nickname?: string } };
+  player?: {
+    id?: number;
+    person?: { first_name?: string; last_name?: string; nickname?: string };
+  };
 }): string {
   const person = p.player?.person;
   if (!person) return "—";
@@ -20,8 +26,33 @@ function personLabel(p: {
   return full || person.nickname || "—";
 }
 
+function matchLabel(m: MatchListItem): string {
+  const home = m.home_team_name ?? "TBD";
+  const away = m.away_team_name ?? "TBD";
+  if (m.home_score != null && m.away_score != null) {
+    return `${home} ${m.home_score}:${m.away_score} ${away}`;
+  }
+  return `${home} – ${away}`;
+}
+
+function sortGroupRows(rows: PublicGroupTeamRow[]): PublicGroupTeamRow[] {
+  return [...rows].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    const gdA = a.goals_for - a.goals_against;
+    const gdB = b.goals_for - b.goals_against;
+    if (gdB !== gdA) return gdB - gdA;
+    return b.goals_for - a.goals_for;
+  });
+}
+
+function isKnockoutPhaseType(code: string | null | undefined): boolean {
+  const t = (code ?? "").toLowerCase();
+  return t === "knockout" || t === "third_place" || t.includes("knock");
+}
+
 export function EditionDetailPage() {
   const { id } = useParams();
+  const location = useLocation();
   const editionId = Number(id);
 
   const edition = useAsyncData(
@@ -34,6 +65,14 @@ export function EditionDetailPage() {
   );
   const matches = useAsyncData(
     () => publicApi.listMatches({ tournament_edition: editionId }),
+    [editionId],
+  );
+  const groups = useAsyncData(
+    () => publicApi.listGroups({ tournament_edition: editionId }),
+    [editionId],
+  );
+  const groupTeams = useAsyncData(
+    () => publicApi.listGroupTeams({ tournament_edition: editionId }),
     [editionId],
   );
   const teams = useAsyncData(
@@ -53,6 +92,60 @@ export function EditionDetailPage() {
     [editionId],
   );
 
+  useEffect(() => {
+    if (!location.hash) return;
+    const el = document.getElementById(location.hash.slice(1));
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [location.hash, edition.loading, matches.loading, groups.loading]);
+
+  const matchRows = useMemo(() => {
+    const rows = matches.data?.results ?? [];
+    return [...rows].sort((a, b) => {
+      const da = a.match_date
+        ? new Date(a.match_date).getTime()
+        : Number.MAX_SAFE_INTEGER;
+      const db = b.match_date
+        ? new Date(b.match_date).getTime()
+        : Number.MAX_SAFE_INTEGER;
+      return da - db;
+    });
+  }, [matches.data]);
+
+  const groupTables = useMemo(() => {
+    const groupList = groups.data?.results ?? [];
+    const rows = groupTeams.data?.results ?? [];
+    return [...groupList]
+      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+      .map((g) => {
+        const phase = phases.data?.results.find(
+          (p) => p.id === g.tournament_phase,
+        );
+        return {
+          group: g,
+          phaseName:
+            phase?.name ??
+            rows.find((r) => r.tournament_phase_group === g.id)?.phase_name,
+          rows: sortGroupRows(
+            rows.filter((r) => r.tournament_phase_group === g.id),
+          ),
+        };
+      })
+      .filter((t) => t.rows.length > 0);
+  }, [groups.data, groupTeams.data, phases.data]);
+
+  const knockoutMatches = useMemo(() => {
+    const phaseById = new Map(
+      (phases.data?.results ?? []).map((p) => [p.id, p]),
+    );
+    return matchRows.filter((m) => {
+      const phase = phaseById.get(m.tournament_phase);
+      const type = phase?.phase_type ?? m.phase_type;
+      return isKnockoutPhaseType(type);
+    });
+  }, [matchRows, phases.data]);
+
   if (!Number.isFinite(editionId)) {
     return <StateMessage variant="error" message="Neveljaven id edicije." />;
   }
@@ -62,18 +155,23 @@ export function EditionDetailPage() {
     phases.loading ||
     matches.loading ||
     teams.loading ||
-    players.loading;
+    players.loading ||
+    groups.loading ||
+    groupTeams.loading;
   const error =
     edition.error ??
     phases.error ??
     matches.error ??
     teams.error ??
     players.error ??
+    groups.error ??
+    groupTeams.error ??
     standings.error ??
     awards.error;
 
-  const matchRows = matches.data?.results ?? [];
-  const liveMatches = matchRows.filter((m) => isLiveMatchStatus(m.status?.code));
+  const liveMatches = matchRows.filter((m) =>
+    isLiveMatchStatus(m.status?.code),
+  );
   const standingRows = normalizeList(standings.data);
   const awardRows = normalizeList(awards.data);
   const isFinished = edition.data?.status?.code === "finished";
@@ -82,6 +180,10 @@ export function EditionDetailPage() {
     .filter((p) => (p.goals ?? 0) > 0)
     .sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0))
     .slice(0, 10);
+
+  const playerRows = [...(players.data?.results ?? [])].sort((a, b) =>
+    personLabel(a).localeCompare(personLabel(b), "sl"),
+  );
 
   return (
     <div className="page">
@@ -125,36 +227,130 @@ export function EditionDetailPage() {
         </section>
       ) : null}
 
-      <section id="phases" className="border-frame border-frame--md">
-        <h2>Faze / skupine</h2>
-        {(phases.data?.results.length ?? 0) === 0 ? (
-          <p className="muted">Ni faz.</p>
-        ) : (
-          <ul className="plain-list">
-            {phases.data?.results.map((ph) => (
-              <li key={ph.id}>
-                {ph.order}. {ph.name}{" "}
-                <span className="muted">({ph.phase_type} · {ph.status})</span>
-              </li>
+      <section id="standings" className="border-frame border-frame--md">
+        <h2>{isFinished ? "Lestvica" : "Lestvica"}</h2>
+
+        {groupTables.length > 0 ? (
+          <div className="edition-standings-groups">
+            <h3>Skupine</h3>
+            {groupTables.map(({ group, phaseName, rows }) => (
+              <div key={group.id} className="edition-standings-group">
+                <h4>
+                  {group.name}
+                  {phaseName ? (
+                    <span className="muted"> · {phaseName}</span>
+                  ) : null}
+                </h4>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Ekipa</th>
+                      <th title="Tekme">T</th>
+                      <th title="Zmage">Z</th>
+                      <th title="Neodločeno">N</th>
+                      <th title="Porazi">P</th>
+                      <th title="Goli">G</th>
+                      <th title="Gol razlika">+/−</th>
+                      <th>Točke</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, idx) => {
+                      const gd = row.goals_for - row.goals_against;
+                      return (
+                        <tr key={row.id}>
+                          <td>{idx + 1}</td>
+                          <td>{row.participation_name || `#${row.team_participation}`}</td>
+                          <td>{row.played}</td>
+                          <td>{row.wins}</td>
+                          <td>{row.draws}</td>
+                          <td>{row.losses}</td>
+                          <td>
+                            {row.goals_for}:{row.goals_against}
+                          </td>
+                          <td>{gd > 0 ? `+${gd}` : gd}</td>
+                          <td>
+                            <strong>{row.points}</strong>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             ))}
-          </ul>
-        )}
+          </div>
+        ) : null}
+
+        <div className="edition-standings-knockout">
+          <h3>Knockout</h3>
+          {knockoutMatches.length === 0 ? (
+            <p className="muted">Ni knockout tekem.</p>
+          ) : (
+            <ul className="plain-list">
+              {knockoutMatches.map((m) => (
+                <li key={m.id}>
+                  <span className="muted">
+                    {m.phase_name ??
+                      phases.data?.results.find((p) => p.id === m.tournament_phase)
+                        ?.name ??
+                      "Faza"}
+                    {" · "}
+                  </span>
+                  <Link to={`/live/matches/${m.id}`}>{matchLabel(m)}</Link>
+                  <span className="muted">
+                    {" "}
+                    · {m.status?.name ?? m.status?.code ?? ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {standingRows.length > 0 ? (
+          <div className="edition-standings-final">
+            <h3>Končna lestvica</h3>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Ekipa</th>
+                  <th>T</th>
+                  <th>G</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standingRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.position}</td>
+                    <td>{row.team_name ?? `#${row.team_participation}`}</td>
+                    <td>{row.points ?? "—"}</td>
+                    <td>
+                      {row.goals_for != null && row.goals_against != null
+                        ? `${row.goals_for}:${row.goals_against}`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : groupTables.length === 0 && knockoutMatches.length === 0 ? (
+          <p className="muted">Lestvica še ni na voljo.</p>
+        ) : null}
       </section>
 
       <section id="schedule" className="border-frame border-frame--md">
-        <h2>Urnik tekem</h2>
+        <h2>Razpored</h2>
         {matchRows.length === 0 ? (
           <p className="muted">Ni tekem.</p>
         ) : (
           <ul className="plain-list">
             {matchRows.map((m) => (
               <li key={m.id}>
-                <Link to={`/matches/${m.id}`}>
-                  {m.home_team_name ?? "TBD"} vs {m.away_team_name ?? "TBD"}
-                  {m.home_score != null && m.away_score != null
-                    ? ` ${m.home_score}:${m.away_score}`
-                    : ""}
-                </Link>
+                <Link to={`/live/matches/${m.id}`}>{matchLabel(m)}</Link>
                 <span className="muted">
                   {" "}
                   · {m.status?.name ?? m.status?.code}
@@ -166,28 +362,6 @@ export function EditionDetailPage() {
             ))}
           </ul>
         )}
-      </section>
-
-      <section id="players" className="border-frame border-frame--md">
-        <h2>Igralci</h2>
-        {(players.data?.results.length ?? 0) === 0 ? (
-          <p className="muted">Ni igralcev.</p>
-        ) : (
-          <ul className="plain-list">
-            {players.data?.results.slice(0, 40).map((p) => (
-              <li key={p.id}>
-                {personLabel(p)}
-                {p.team_name || p.participation_name
-                  ? ` · ${p.team_name ?? p.participation_name}`
-                  : ""}
-                {p.jersey_number != null ? ` · #${p.jersey_number}` : ""}
-              </li>
-            ))}
-          </ul>
-        )}
-        <p>
-          <Link to="/persons">Vsi igralci / osebe</Link>
-        </p>
       </section>
 
       <section id="teams" className="border-frame border-frame--md">
@@ -211,55 +385,53 @@ export function EditionDetailPage() {
         )}
       </section>
 
+      <section id="players" className="border-frame border-frame--md">
+        <h2>Igralci</h2>
+        {playerRows.length === 0 ? (
+          <p className="muted">Ni igralcev.</p>
+        ) : (
+          <ul className="plain-list">
+            {playerRows.map((p) => (
+              <li key={p.id}>
+                {p.player?.id ? (
+                  <Link to={`/players/${p.player.id}`}>{personLabel(p)}</Link>
+                ) : (
+                  personLabel(p)
+                )}
+                {p.team_name || p.participation_name
+                  ? ` · ${p.team_name ?? p.participation_name}`
+                  : ""}
+                {p.jersey_number != null ? ` · #${p.jersey_number}` : ""}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section id="stats" className="border-frame border-frame--md">
-        <h2>Statistika (ta edicija)</h2>
+        <h2>Statistika</h2>
         {topScorers.length === 0 ? (
           <p className="muted">Še ni gola / statistik.</p>
         ) : (
           <ul className="plain-list">
             {topScorers.map((p) => (
               <li key={p.id}>
-                {personLabel(p)} — {p.goals} golov
+                {p.player?.id ? (
+                  <Link to={`/players/${p.player.id}`}>{personLabel(p)}</Link>
+                ) : (
+                  personLabel(p)
+                )}{" "}
+                — {p.goals} golov
                 {p.assists ? `, ${p.assists} asistenc` : ""}
               </li>
             ))}
           </ul>
         )}
         <p>
-          <Link to={`/stats?edition=${editionId}`}>Odpri statistiko</Link>
+          <Link to={`/stats?edition=${editionId}`}>
+            Odpri celotno statistiko te edicije
+          </Link>
         </p>
-      </section>
-
-      <section id="standings" className="border-frame border-frame--md">
-        <h2>{isFinished ? "Končna lestvica" : "Lestvica"}</h2>
-        {standingRows.length === 0 ? (
-          <p className="muted">Lestvica še ni objavljena.</p>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Ekipa</th>
-                <th>T</th>
-                <th>G</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standingRows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.position}</td>
-                  <td>{row.team_name ?? `#${row.team_participation}`}</td>
-                  <td>{row.points ?? "—"}</td>
-                  <td>
-                    {row.goals_for != null && row.goals_against != null
-                      ? `${row.goals_for}:${row.goals_against}`
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </section>
 
       <section className="border-frame border-frame--md">
@@ -270,10 +442,7 @@ export function EditionDetailPage() {
           <ul className="plain-list">
             {liveMatches.map((m) => (
               <li key={m.id}>
-                <Link to={`/matches/${m.id}`}>
-                  {m.home_team_name} {m.home_score ?? 0}:{m.away_score ?? 0}{" "}
-                  {m.away_team_name}
-                </Link>
+                <Link to={`/live/matches/${m.id}`}>{matchLabel(m)}</Link>
               </li>
             ))}
           </ul>
