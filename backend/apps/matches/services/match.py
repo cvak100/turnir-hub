@@ -7,6 +7,16 @@ from rest_framework.exceptions import ValidationError
 
 from apps.core.exceptions import InvalidStateError
 from apps.matches.models import Match, MatchEvent, MatchStatus
+from apps.matches.status_codes import (
+    FINISHED_MATCH_STATUS_CODES,
+    LIVE_MATCH_STATUS_CODES,
+    SCHEDULED_MATCH_STATUS_CODES,
+    event_half_for_status,
+    get_match_status,
+    is_finished_match_status,
+    is_live_match_status,
+    is_scheduled_match_status,
+)
 from apps.players.models import TeamParticipationPlayer
 from apps.tournaments.models import TournamentPhaseGroupTeam
 
@@ -22,20 +32,21 @@ RED_CODES = {"red_card", "second_yellow"}
 class MatchEventService:
     @staticmethod
     def _get_status(code: str) -> MatchStatus:
-        status = MatchStatus.objects.filter(code=code).first()
-        if status is None:
-            raise InvalidStateError(f"MatchStatus '{code}' is not configured.")
-        return status
+        return get_match_status(code)
 
     @staticmethod
-    def _validate_live_editable(match: Match, *, require_live: bool = True):
+    def _validate_event_editable(match: Match):
+        """Live-like statuses or finished (Normal Edit)."""
         code = match.status.code if match.status_id else None
-        if require_live and code != "live":
-            raise InvalidStateError("Match must be live for event entry.")
-        if code == "finished":
-            raise InvalidStateError(
-                "Cannot modify events on a finished match without unlock."
-            )
+        if is_live_match_status(code) or is_finished_match_status(code):
+            return
+        raise InvalidStateError(
+            "Match must be in a live period or finished to create/edit events."
+        )
+
+    @staticmethod
+    def _is_shootout_half(half: str | None) -> bool:
+        return (half or "").strip().lower() == "penalties"
 
     @staticmethod
     def _validate_event_payload(*, match: Match, data: dict):
@@ -50,6 +61,7 @@ class MatchEventService:
         is_temporary = bool(data.get("is_temporary_player", False))
         label = (data.get("temporary_player_label") or "").strip()
         player = data.get("player")
+        shootout = MatchEventService._is_shootout_half(data.get("half"))
 
         if is_temporary:
             if not label:
@@ -60,7 +72,7 @@ class MatchEventService:
                         )
                     }
                 )
-        elif player is None:
+        elif player is None and not shootout:
             raise ValidationError(
                 {"player": "Player is required unless temporary player mode is used."}
             )
@@ -76,7 +88,8 @@ class MatchEventService:
                 )
 
         minute = data.get("minute")
-        if minute is not None and minute > 130:
+        # Shootout uses minute as kick sequence number — allow higher values.
+        if minute is not None and not shootout and minute > 130:
             raise ValidationError({"minute": "Minute looks unrealistic."})
 
     @staticmethod
@@ -85,10 +98,28 @@ class MatchEventService:
         away_id = match.away_team_participation_id
         home = 0
         away = 0
+        home_ht = 0
+        away_ht = 0
+        home_et = 0
+        away_et = 0
+        home_pen = 0
+        away_pen = 0
 
         events = match.events.select_related("event_type").all()
         for event in events:
             code = event.event_type.code
+            team_id = event.team_participation_id
+            half = (event.half or "").strip()
+            shootout = MatchEventService._is_shootout_half(half)
+
+            if shootout:
+                if code == "penalty_scored":
+                    if team_id == home_id:
+                        home_pen += 1
+                    elif team_id == away_id:
+                        away_pen += 1
+                continue
+
             if code == "penalty_missed":
                 continue
 
@@ -97,25 +128,104 @@ class MatchEventService:
             if not is_goal:
                 continue
 
-            team_id = event.team_participation_id
             if is_own:
                 if team_id == home_id:
-                    away += 1
+                    scorer_side = "away"
                 elif team_id == away_id:
-                    home += 1
+                    scorer_side = "home"
+                else:
+                    continue
             else:
                 if team_id == home_id:
-                    home += 1
+                    scorer_side = "home"
                 elif team_id == away_id:
-                    away += 1
+                    scorer_side = "away"
+                else:
+                    continue
+
+            if scorer_side == "home":
+                home += 1
+            else:
+                away += 1
+
+            # Half "1" (and legacy empty) → halftime snapshot
+            if half in ("", "1"):
+                if scorer_side == "home":
+                    home_ht += 1
+                else:
+                    away_ht += 1
+            elif half.upper().startswith("ET"):
+                if scorer_side == "home":
+                    home_et += 1
+                else:
+                    away_et += 1
 
         match.home_score = home
         match.away_score = away
-        match.save(update_fields=["home_score", "away_score", "updated_at"])
+        match.halftime_home_score = home_ht
+        match.halftime_away_score = away_ht
+        match.extra_time_home_score = home_et
+        match.extra_time_away_score = away_et
+        match.home_score_penalties = home_pen
+        match.away_score_penalties = away_pen
+        match.save(
+            update_fields=[
+                "home_score",
+                "away_score",
+                "halftime_home_score",
+                "halftime_away_score",
+                "extra_time_home_score",
+                "extra_time_away_score",
+                "home_score_penalties",
+                "away_score_penalties",
+                "updated_at",
+            ]
+        )
         return match
 
     @staticmethod
+    def refresh_match_from_events(*, match: Match) -> Match:
+        """Recompute scores + player stats from all match events."""
+        MatchEventService.recalculate_match_score(match)
+        MatchEventService.recalculate_player_stats(match=match)
+        match.refresh_from_db()
+        MatchEventService.broadcast_match_update(match=match, event=None)
+        live_logger.info(
+            "match_refreshed_from_events match_id=%s score=%s:%s ht=%s:%s",
+            match.id,
+            match.home_score,
+            match.away_score,
+            match.halftime_home_score,
+            match.halftime_away_score,
+        )
+        return match
+
+    @staticmethod
+    def _match_duration_for_stats(match: Match) -> int:
+        if match.duration_minutes:
+            return int(match.duration_minutes)
+        phase = getattr(match, "tournament_phase", None)
+        edition = getattr(phase, "tournament_edition", None) if phase else None
+        if edition is not None:
+            rules = getattr(edition, "global_rule_template", None)
+            if rules and getattr(rules, "match_duration_minutes", None):
+                return int(rules.match_duration_minutes)
+            cfg = getattr(edition, "format_config", None)
+            if cfg and getattr(cfg, "half_duration_minutes", None):
+                return int(cfg.half_duration_minutes) * 2
+        return 0
+
+    @staticmethod
     def recalculate_player_stats(*, match: Match):
+        """
+        Recompute cumulative participation stats from finished matches
+        (plus the match currently being edited / finished).
+
+        matches_played / minutes_played count for any player with a
+        non-shootout event on that match — so goals imply matches.
+        """
+        from django.db.models import Prefetch, Q
+
         participation_ids = [
             pid
             for pid in (
@@ -124,10 +234,20 @@ class MatchEventService:
             )
             if pid
         ]
-        roster = TeamParticipationPlayer.objects.filter(
+        if not participation_ids:
+            return
+
+        roster_qs = TeamParticipationPlayer.objects.filter(
             team_participation_id__in=participation_ids,
         )
-        roster.update(goals=0, assists=0, yellow_cards=0, red_cards=0)
+        roster_qs.update(
+            goals=0,
+            assists=0,
+            yellow_cards=0,
+            red_cards=0,
+            matches_played=0,
+            minutes_played=0,
+        )
 
         roster_map = {
             (row.team_participation_id, row.player_id): row
@@ -136,31 +256,81 @@ class MatchEventService:
             )
         }
 
-        events = match.events.select_related("event_type").filter(player__isnull=False)
-        for event in events:
-            key = (event.team_participation_id, event.player_id)
-            row = roster_map.get(key)
-            if row is None:
-                continue
-            code = event.event_type.code
-            if code in GOAL_EVENT_CODES or code == "goal":
-                if not event.is_own_goal and code != OWN_GOAL_CODE:
-                    row.goals += 1
-            if code == ASSIST_CODE:
-                row.assists += 1
-            if event.related_player_id and code in GOAL_EVENT_CODES | {"goal"}:
-                related_key = (event.team_participation_id, event.related_player_id)
-                related = roster_map.get(related_key)
-                if related is not None:
-                    related.assists += 1
-            if code == YELLOW_CODE:
-                row.yellow_cards += 1
-            if code in RED_CODES:
-                row.red_cards += 1
+        finished_status_ids = list(
+            MatchStatus.objects.filter(
+                code__in=FINISHED_MATCH_STATUS_CODES
+            ).values_list("id", flat=True)
+        )
+        related_matches = (
+            Match.objects.filter(
+                Q(home_team_participation_id__in=participation_ids)
+                | Q(away_team_participation_id__in=participation_ids)
+            )
+            .filter(Q(pk=match.pk) | Q(status_id__in=finished_status_ids))
+            .select_related(
+                "tournament_phase__tournament_edition__global_rule_template",
+                "tournament_phase__tournament_edition__format_config",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "events",
+                    queryset=MatchEvent.objects.select_related("event_type").filter(
+                        player__isnull=False
+                    ),
+                )
+            )
+            .order_by("id")
+        )
+
+        for m in related_matches:
+            appeared: set[tuple[int, int]] = set()
+            events = [
+                e
+                for e in m.events.all()
+                if not MatchEventService._is_shootout_half(e.half)
+            ]
+            for event in events:
+                key = (event.team_participation_id, event.player_id)
+                row = roster_map.get(key)
+                if row is None:
+                    continue
+                appeared.add(key)
+                code = event.event_type.code
+                if code in GOAL_EVENT_CODES or code == "goal":
+                    if not event.is_own_goal and code != OWN_GOAL_CODE:
+                        row.goals += 1
+                if code == ASSIST_CODE:
+                    row.assists += 1
+                if event.related_player_id and code in GOAL_EVENT_CODES | {"goal"}:
+                    related_key = (
+                        event.team_participation_id,
+                        event.related_player_id,
+                    )
+                    related = roster_map.get(related_key)
+                    if related is not None:
+                        related.assists += 1
+                        appeared.add(related_key)
+                if code == YELLOW_CODE:
+                    row.yellow_cards += 1
+                if code in RED_CODES:
+                    row.red_cards += 1
+
+            minutes = MatchEventService._match_duration_for_stats(m)
+            for key in appeared:
+                row = roster_map[key]
+                row.matches_played += 1
+                row.minutes_played += minutes
 
         TeamParticipationPlayer.objects.bulk_update(
             roster_map.values(),
-            ["goals", "assists", "yellow_cards", "red_cards"],
+            [
+                "goals",
+                "assists",
+                "yellow_cards",
+                "red_cards",
+                "matches_played",
+                "minutes_played",
+            ],
         )
 
     @staticmethod
@@ -184,10 +354,14 @@ class MatchEventService:
             gt.goals_for = 0
             gt.goals_against = 0
 
-        finished = MatchStatus.objects.filter(code="finished").first()
+        finished_ids = list(
+            MatchStatus.objects.filter(
+                code__in=FINISHED_MATCH_STATUS_CODES
+            ).values_list("id", flat=True)
+        )
         matches = Match.objects.filter(tournament_phase_group=group)
-        if finished:
-            matches = matches.filter(status=finished)
+        if finished_ids:
+            matches = matches.filter(status_id__in=finished_ids)
 
         for m in matches:
             if (
@@ -248,8 +422,11 @@ class MatchEventService:
             "score": {
                 "home": match.home_score,
                 "away": match.away_score,
+                "home_penalties": match.home_score_penalties,
+                "away_penalties": match.away_score_penalties,
             },
             "status": match.status.code if match.status_id else None,
+            "is_penalties": match.is_penalties,
             "event": None,
         }
         if event is not None:
@@ -258,6 +435,7 @@ class MatchEventService:
                 "event_type": event.event_type.code,
                 "minute": event.minute,
                 "extra_minute": event.extra_minute,
+                "half": event.half,
                 "team_participation_id": event.team_participation_id,
                 "player_id": event.player_id,
                 "is_temporary_player": event.is_temporary_player,
@@ -274,7 +452,7 @@ class MatchEventService:
     @transaction.atomic
     def create_event(*, data: dict, user=None) -> MatchEvent:
         match = data["match"]
-        MatchEventService._validate_live_editable(match, require_live=True)
+        MatchEventService._validate_event_editable(match)
         MatchEventService._validate_event_payload(match=match, data=data)
 
         event = MatchEvent.objects.create(created_by=user, **data)
@@ -297,7 +475,7 @@ class MatchEventService:
     @transaction.atomic
     def update_event(*, event: MatchEvent, data: dict) -> MatchEvent:
         match = event.match
-        MatchEventService._validate_live_editable(match, require_live=True)
+        MatchEventService._validate_event_editable(match)
         old_player_id = event.player_id
         merged = {
             "team_participation": data.get(
@@ -314,6 +492,7 @@ class MatchEventService:
                 event.temporary_player_label,
             ),
             "minute": data.get("minute", event.minute),
+            "half": data.get("half", event.half),
         }
         MatchEventService._validate_event_payload(match=match, data=merged)
 
@@ -339,7 +518,7 @@ class MatchEventService:
     @transaction.atomic
     def delete_event(*, event: MatchEvent):
         match = event.match
-        MatchEventService._validate_live_editable(match, require_live=True)
+        MatchEventService._validate_event_editable(match)
         event_id = event.id
         event.delete()
         MatchEventService.recalculate_match_score(match)
@@ -356,26 +535,68 @@ class MatchEventService:
     @transaction.atomic
     def start_match(*, match: Match) -> Match:
         code = match.status.code if match.status_id else None
-        if code == "finished":
-            raise InvalidStateError("Cannot start a finished match.")
-        if code == "live":
+        if is_live_match_status(code):
             raise InvalidStateError("Match is already live.")
-        match.status = MatchEventService._get_status("live")
-        match.save(update_fields=["status", "updated_at"])
-        live_logger.info("match_started match_id=%s", match.id)
+        if code == "cancelled":
+            raise InvalidStateError("Cannot start a cancelled match.")
+        match.status = MatchEventService._get_status("match_first_half")
+        match.is_penalties = False
+        match.save(update_fields=["status", "is_penalties", "updated_at"])
+        live_logger.info("match_started match_id=%s from_status=%s", match.id, code)
         MatchEventService.broadcast_match_update(match=match)
         return match
 
     @staticmethod
     @transaction.atomic
+    def reopen_match(*, match: Match) -> Match:
+        """Put a finished match back to 1st half (live)."""
+        code = match.status.code if match.status_id else None
+        if is_live_match_status(code):
+            raise InvalidStateError("Match is already live.")
+        if not is_finished_match_status(code):
+            raise InvalidStateError("Only a finished match can be reopened to live.")
+        match.status = MatchEventService._get_status("match_first_half")
+        match.is_penalties = False
+        match.save(update_fields=["status", "is_penalties", "updated_at"])
+        MatchEventService.recalculate_player_stats(match=match)
+        live_logger.info("match_reopened match_id=%s", match.id)
+        MatchEventService.broadcast_match_update(match=match)
+        return match
+
+    @staticmethod
+    @transaction.atomic
+    def set_match_status(*, match: Match, status_code: str) -> Match:
+        """Set match period/status using tournament template codes."""
+        new_status = MatchEventService._get_status(status_code)
+
+        if status_code in FINISHED_MATCH_STATUS_CODES or status_code == "match_finished":
+            return MatchEventService.finish_match(match=match)
+
+        if is_live_match_status(status_code) or status_code in SCHEDULED_MATCH_STATUS_CODES:
+            match.status = new_status
+            match.is_penalties = status_code == "match_penalties"
+            match.save(update_fields=["status", "is_penalties", "updated_at"])
+            live_logger.info(
+                "match_status_set match_id=%s status=%s",
+                match.id,
+                status_code,
+            )
+            MatchEventService.broadcast_match_update(match=match)
+            return match
+
+        raise InvalidStateError(f"Unsupported match status '{status_code}'.")
+
+    @staticmethod
+    @transaction.atomic
     def finish_match(*, match: Match) -> Match:
         code = match.status.code if match.status_id else None
-        if code == "finished":
+        if is_finished_match_status(code):
             raise InvalidStateError("Match is already finished.")
         MatchEventService.recalculate_match_score(match)
         MatchEventService.recalculate_player_stats(match=match)
-        match.status = MatchEventService._get_status("finished")
-        match.save(update_fields=["status", "updated_at"])
+        match.status = MatchEventService._get_status("match_finished")
+        match.is_penalties = False
+        match.save(update_fields=["status", "is_penalties", "updated_at"])
         MatchEventService.recalculate_group_standings(match=match)
         live_logger.info(
             "match_finished match_id=%s score=%s:%s",
@@ -390,7 +611,9 @@ class MatchEventService:
 class MatchService:
     @staticmethod
     def _default_status():
-        status = MatchStatus.objects.filter(code="scheduled").first()
+        status = MatchStatus.objects.filter(code="match_scheduled").first()
+        if status is None:
+            status = MatchStatus.objects.filter(code="scheduled").first()
         if status is None:
             status = MatchStatus.objects.first()
         return status

@@ -9,6 +9,11 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
+from apps.core.views.generator import (
+    DemoTournamentGeneratorView,
+    GroupKnockoutGeneratorView,
+    PlayerHistoryGeneratorView,
+)
 from apps.core.views.health import HealthView
 from apps.users.views.auth import MeView, MyPermissionsView
 
@@ -20,6 +25,21 @@ urlpatterns = [
         "api/v1/docs/",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
+    ),
+    path(
+        "api/v1/admin/generator/demo-tournament/",
+        DemoTournamentGeneratorView.as_view(),
+        name="admin-generator-demo-tournament",
+    ),
+    path(
+        "api/v1/admin/generator/group-knockout/",
+        GroupKnockoutGeneratorView.as_view(),
+        name="admin-generator-group-knockout",
+    ),
+    path(
+        "api/v1/admin/generator/player-history/",
+        PlayerHistoryGeneratorView.as_view(),
+        name="admin-generator-player-history",
     ),
     path("api/v1/", include("apps.tournaments.urls")),
     path("api/v1/", include("apps.players.urls")),

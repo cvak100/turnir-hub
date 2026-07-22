@@ -19,7 +19,7 @@ import {
   toRuleTemplateInput,
   type NewRuleTemplateFormState,
 } from "@/modules/admin/components/NewRuleTemplateFormFields";
-import { editionService, type EditionDetail } from "@/modules/editions/services/editionService";
+import { editionService, type EditionDetail, type FormatConfig } from "@/modules/editions/services/editionService";
 import {
   teamParticipationService,
   type TeamParticipationListItem,
@@ -74,8 +74,11 @@ const DEFAULT_GROUP_CONFIG = {
   ranking_criteria: [
     "points",
     "goal_difference",
-    "goals_scored",
-    "head_to_head",
+    "goals_for",
+    "head_to_head_points",
+    "head_to_head_goal_difference",
+    "head_to_head_goals_for",
+    "team_name",
   ],
 };
 
@@ -187,8 +190,8 @@ export function EditionPhasesPage() {
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [formatId, setFormatId] = useState("");
-  const [replacePhases, setReplacePhases] = useState(false);
   const [boardTick, setBoardTick] = useState(0);
+  const [forceKnockout, setForceKnockout] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -267,11 +270,55 @@ export function EditionPhasesPage() {
     try {
       await editionService.update(editionId, {
         format: Number(formatId),
-        apply_format_phases: true,
-        replace_format_phases: replacePhases,
+        apply_format_phases: false,
+        replace_format_phases: false,
       });
+      await edition.reload();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveFormatConfigAndGenerate(replace: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      await editionService.generateStructure(editionId, { replace });
       await load();
       await edition.reload();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function generateRealGroupMatches(replace: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      await editionService.generateGroupMatches(editionId, { replace });
+      setBoardTick((t) => t + 1);
+      await load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function fillKnockoutBracket(replace: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      await editionService.fillKnockout(editionId, {
+        replace,
+        force: forceKnockout,
+      });
+      setBoardTick((t) => t + 1);
+      await load();
     } catch (err) {
       setError(err);
     } finally {
@@ -416,29 +463,42 @@ export function EditionPhasesPage() {
                 ))}
               </select>
             </label>
-            <label className="checkbox-row">
-              <input
-                className="sketch-check border-frame border-frame--sm"
-                type="checkbox"
-                checked={replacePhases}
-                onChange={(e) => setReplacePhases(e.target.checked)}
-              />
-              Zamenjaj obstoječe faze
-            </label>
             <button
               type="button"
               className="border-frame border-frame--sm"
               disabled={busy || !formatId}
               onClick={() => void applyFormat()}
             >
-              Uporabi format
+              Shrani format
             </button>
           </div>
           <p className="muted">
-            »Skupine + Knockout« odpre samo skupinski del — knockout runde
-            dodaš sam spodaj. Nič se ne generira avtomatsko.
+            Izberi format, nato spodaj shrani nastavitve in generiraj ogrodje
+            faz (skupine + knockout runde).
           </p>
         </section>
+      ) : null}
+
+      {!edition.loading && edition.data && canEdit ? (
+        <FormatConfigPanel
+          editionId={editionId}
+          busy={busy}
+          setBusy={setBusy}
+          setError={setError}
+          onAfterSave={() => void edition.reload()}
+          onGenerateStructure={(replace) =>
+            void saveFormatConfigAndGenerate(replace)
+          }
+          onGenerateGroupMatches={(replace) =>
+            void generateRealGroupMatches(replace)
+          }
+          onFillKnockout={(replace) => void fillKnockoutBracket(replace)}
+          forceKnockout={forceKnockout}
+          setForceKnockout={setForceKnockout}
+          hasGroupPhase={!!primaryGroupPhase}
+          hasKnockout={knockoutPhases.length > 0}
+          hasAnyPhases={phases.length > 0}
+        />
       ) : null}
 
       {!edition.loading && edition.data ? (
@@ -521,15 +581,15 @@ export function EditionPhasesPage() {
           {showKnockoutZone ? (
             <section className="border-frame border-frame--md phase-zone">
               <div className="phase-zone__head">
-                <h2 style={{ margin: 0 }}>Knockout</h2>
+                <h2 style={{ margin: 0 }}>Izločilni del</h2>
               </div>
               <p className="muted" style={{ marginTop: 0 }}>
-                Dodaj runde in uredi vrstni red. Tekme generiraš spodaj v
-                pregledu.
+                Runde so v bazi ločene faze; tukaj so prikazane kot ena
+                skupina. Vrstni red lahko še vedno urejaš ročno.
               </p>
 
               {knockoutPhases.length === 0 ? (
-                <p className="muted">Še ni rund.</p>
+                <p className="muted">Še ni rund — generiraj ogrodje zgoraj.</p>
               ) : (
                 <ul className="knockout-rounds plain-list">
                   {knockoutPhases.map((phase, index) => (
@@ -583,7 +643,7 @@ export function EditionPhasesPage() {
 
               {canEdit ? (
                 <div className="knockout-presets">
-                  <span className="muted">Dodaj rundo:</span>
+                  <span className="muted">Dodaj rundo ročno:</span>
                   <div className="row-actions" style={{ flexWrap: "wrap" }}>
                     {KNOCKOUT_ROUND_PRESETS.map((preset) => {
                       const already = usedRoundCodes.has(preset.code);
@@ -642,6 +702,311 @@ export function EditionPhasesPage() {
         </>
       ) : null}
     </div>
+  );
+}
+
+function FormatConfigPanel({
+  editionId,
+  busy,
+  setBusy,
+  setError,
+  onAfterSave,
+  onGenerateStructure,
+  onGenerateGroupMatches,
+  onFillKnockout,
+  forceKnockout,
+  setForceKnockout,
+  hasGroupPhase,
+  hasKnockout,
+  hasAnyPhases,
+}: {
+  editionId: number;
+  busy: boolean;
+  setBusy: (v: boolean) => void;
+  setError: (e: unknown) => void;
+  onAfterSave: () => void;
+  onGenerateStructure: (replace: boolean) => void;
+  onGenerateGroupMatches: (replace: boolean) => void;
+  onFillKnockout: (replace: boolean) => void;
+  forceKnockout: boolean;
+  setForceKnockout: (v: boolean) => void;
+  hasGroupPhase: boolean;
+  hasKnockout: boolean;
+  hasAnyPhases: boolean;
+}) {
+  const [cfg, setCfg] = useState<FormatConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState("4");
+  const [teamsPerGroup, setTeamsPerGroup] = useState("4");
+  const [advancing, setAdvancing] = useState("2");
+  const [bestRunnersUp, setBestRunnersUp] = useState(false);
+  const [bestRunnersCount, setBestRunnersCount] = useState("2");
+  const [halfDuration, setHalfDuration] = useState("");
+  const [halfBreak, setHalfBreak] = useState("");
+  const [buffer, setBuffer] = useState("");
+  const [thirdPlace, setThirdPlace] = useState(true);
+  const [pairing, setPairing] = useState<"auto_cross" | "manual">("auto_cross");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCfg() {
+      setLoading(true);
+      try {
+        const data = await editionService.getFormatConfig(editionId);
+        if (cancelled) return;
+        setCfg(data);
+        setGroups(String(data.number_of_groups));
+        setTeamsPerGroup(String(data.teams_per_group));
+        setAdvancing(String(data.teams_advancing_per_group));
+        setBestRunnersUp(data.best_runners_up);
+        setBestRunnersCount(
+          data.number_of_best_runners_up != null
+            ? String(data.number_of_best_runners_up)
+            : "2",
+        );
+        setHalfDuration(
+          data.half_duration_minutes != null
+            ? String(data.half_duration_minutes)
+            : "",
+        );
+        setHalfBreak(
+          data.half_time_break_minutes != null
+            ? String(data.half_time_break_minutes)
+            : "",
+        );
+        setBuffer(
+          data.buffer_between_matches_minutes != null
+            ? String(data.buffer_between_matches_minutes)
+            : "",
+        );
+        setThirdPlace(data.has_third_place_match);
+        setPairing(data.pairing_method);
+      } catch (err) {
+        if (!cancelled) setError(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void loadCfg();
+    return () => {
+      cancelled = true;
+    };
+  }, [editionId, setError]);
+
+  async function saveConfig() {
+    setBusy(true);
+    setError(null);
+    try {
+      const saved = await editionService.updateFormatConfig(editionId, {
+        number_of_groups: Number(groups) || 1,
+        teams_per_group: Number(teamsPerGroup) || 2,
+        teams_advancing_per_group: Number(advancing) || 0,
+        best_runners_up: bestRunnersUp,
+        number_of_best_runners_up: bestRunnersUp
+          ? Number(bestRunnersCount) || 0
+          : null,
+        half_duration_minutes: halfDuration.trim()
+          ? Number(halfDuration)
+          : null,
+        half_time_break_minutes: halfBreak.trim()
+          ? Number(halfBreak)
+          : null,
+        buffer_between_matches_minutes: buffer.trim()
+          ? Number(buffer)
+          : null,
+        has_third_place_match: thirdPlace,
+        pairing_method: pairing,
+      });
+      setCfg(saved);
+      onAfterSave();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const advancingTotal =
+    (Number(groups) || 0) * (Number(advancing) || 0) +
+    (bestRunnersUp ? Number(bestRunnersCount) || 0 : 0);
+
+  return (
+    <section className="border-frame border-frame--md">
+      <h2>Nastavitve formata &amp; generator</h2>
+      {loading ? (
+        <p className="muted">Nalagam config…</p>
+      ) : (
+        <div className="stack-form group-stage-rules">
+          <div className="group-stage-rules__grid">
+            <label>
+              Št. skupin
+              <IntegerStepper
+                value={groups}
+                min={1}
+                max={26}
+                emptyMeansNull={false}
+                onChange={setGroups}
+              />
+            </label>
+            <label>
+              Ekip / skupina
+              <IntegerStepper
+                value={teamsPerGroup}
+                min={2}
+                max={20}
+                emptyMeansNull={false}
+                onChange={setTeamsPerGroup}
+              />
+            </label>
+            <label>
+              Napreduje / skupina
+              <IntegerStepper
+                value={advancing}
+                min={0}
+                max={Number(teamsPerGroup) || 20}
+                emptyMeansNull={false}
+                onChange={setAdvancing}
+              />
+            </label>
+            <label>
+              Polčas (min)
+              <IntegerStepper
+                value={halfDuration}
+                min={1}
+                max={90}
+                emptyMeansNull
+                onChange={setHalfDuration}
+              />
+            </label>
+            <label>
+              Odmor (min)
+              <IntegerStepper
+                value={halfBreak}
+                min={0}
+                max={60}
+                emptyMeansNull
+                onChange={setHalfBreak}
+              />
+            </label>
+            <label>
+              Buffer med tekmami (min)
+              <IntegerStepper
+                value={buffer}
+                min={0}
+                max={180}
+                emptyMeansNull
+                onChange={setBuffer}
+              />
+            </label>
+            {bestRunnersUp ? (
+              <label>
+                Št. najboljših drugih
+                <IntegerStepper
+                  value={bestRunnersCount}
+                  min={1}
+                  max={16}
+                  emptyMeansNull={false}
+                  onChange={setBestRunnersCount}
+                />
+              </label>
+            ) : null}
+            <label>
+              Parjenje knockout
+              <select
+                value={pairing}
+                onChange={(e) =>
+                  setPairing(e.target.value as "auto_cross" | "manual")
+                }
+              >
+                <option value="auto_cross">auto_cross (A1–B2 …)</option>
+                <option value="manual">manual (prazni pari)</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="row-actions" style={{ flexWrap: "wrap" }}>
+            <label className="checkbox-row">
+              <input
+                className="sketch-check border-frame border-frame--sm"
+                type="checkbox"
+                checked={bestRunnersUp}
+                onChange={(e) => setBestRunnersUp(e.target.checked)}
+              />
+              Najboljši drugi
+            </label>
+            <label className="checkbox-row">
+              <input
+                className="sketch-check border-frame border-frame--sm"
+                type="checkbox"
+                checked={thirdPlace}
+                onChange={(e) => setThirdPlace(e.target.checked)}
+              />
+              Tekma za 3. mesto
+            </label>
+          </div>
+
+          <p className="muted">
+            Napreduje približno <strong>{advancingTotal}</strong> ekip
+            {cfg ? ` (shranjeno: ${cfg.expected_advancing_teams})` : ""}.
+          </p>
+
+          <div className="row-actions" style={{ flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="border-frame border-frame--sm"
+              disabled={busy}
+              onClick={() => void saveConfig()}
+            >
+              Shrani nastavitve
+            </button>
+            <button
+              type="button"
+              className="border-frame border-frame--sm"
+              disabled={busy}
+              onClick={() => {
+                void (async () => {
+                  if (hasAnyPhases) {
+                    const ok = window.confirm(
+                      "Edicija že ima faze. Zamenjam obstoječe ogrodje (skupine/tekme brez eventov se zbrišejo). Nadaljujem?",
+                    );
+                    if (!ok) return;
+                  }
+                  await saveConfig();
+                  onGenerateStructure(hasAnyPhases);
+                })();
+              }}
+            >
+              Generiraj ogrodje faz
+            </button>
+            <button
+              type="button"
+              className="border-frame border-frame--sm"
+              disabled={busy || !hasGroupPhase}
+              onClick={() => onGenerateGroupMatches(true)}
+            >
+              Generiraj tekme (round-robin)
+            </button>
+            <label className="checkbox-row">
+              <input
+                className="sketch-check border-frame border-frame--sm"
+                type="checkbox"
+                checked={forceKnockout}
+                onChange={(e) => setForceKnockout(e.target.checked)}
+              />
+              Force knockout (tudi če skupine niso končane)
+            </label>
+            <button
+              type="button"
+              className="border-frame border-frame--sm"
+              disabled={busy || !hasKnockout}
+              onClick={() => onFillKnockout(true)}
+            >
+              Napolni knockout
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

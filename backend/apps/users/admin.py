@@ -59,11 +59,19 @@ class PersonAdmin(admin.ModelAdmin):
         "first_name",
         "last_name",
         "email",
+        "user",
         "status",
         "show_as_anonymous",
     )
     list_filter = ("status", "show_as_anonymous", "person_roles__role_type")
-    search_fields = ("first_name", "last_name", "email", "nickname")
+    search_fields = (
+        "first_name",
+        "last_name",
+        "email",
+        "nickname",
+        "user__username",
+    )
+    raw_id_fields = ("user",)
 
 
 @admin.register(Role)

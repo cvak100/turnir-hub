@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from .person_status import PersonStatus
@@ -10,6 +11,14 @@ class Person(models.Model):
         OTHER = "other", "Other"
         UNSPECIFIED = "", "Unspecified"
 
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="person",
+        help_text="Optional login account linked to this person.",
+    )
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     nickname = models.CharField(max_length=100, blank=True)

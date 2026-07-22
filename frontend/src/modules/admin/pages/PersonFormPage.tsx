@@ -27,6 +27,7 @@ type FormState = {
   gender: string;
   bio: string;
   status: string;
+  user_id: string;
   email: string;
   phone: string;
   city: string;
@@ -59,6 +60,7 @@ const emptyForm = (): FormState => ({
   gender: "",
   bio: "",
   status: "",
+  user_id: "",
   email: "",
   phone: "",
   city: "",
@@ -93,6 +95,7 @@ function detailToForm(person: PersonDetail): FormState {
     gender: person.gender || "",
     bio: person.bio || "",
     status: person.status ? String(person.status.id) : "",
+    user_id: person.user ? String(person.user.id) : "",
     email: person.email || "",
     phone: person.phone || "",
     city: person.city || "",
@@ -221,6 +224,7 @@ export function PersonFormPage({ mode }: { mode: Mode }) {
         gender: form.gender,
         bio: form.bio.trim(),
         status: Number(form.status),
+        user: optionalInt(form.user_id),
         email: form.email.trim(),
         phone: form.phone.trim(),
         city: form.city.trim(),
@@ -391,6 +395,22 @@ export function PersonFormPage({ mode }: { mode: Mode }) {
         </label>
         <p className="muted">
           Photo upload pride v naslednjem koraku (ImageField je že na modelu).
+        </p>
+
+        <h2>Prijava (User ↔ Person)</h2>
+        <label>
+          User ID
+          <input
+            type="number"
+            min={1}
+            placeholder="npr. 1 — prazno = brez povezave"
+            value={form.user_id}
+            onChange={(e) => setField("user_id", e.target.value)}
+          />
+        </label>
+        <p className="muted">
+          Poveži Django uporabnika s to osebo. En user = ena oseba. ID najdeš v
+          Django adminu (/admin/auth/user/).
         </p>
 
         <h2>Kontakt</h2>

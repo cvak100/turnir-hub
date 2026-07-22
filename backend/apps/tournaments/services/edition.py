@@ -33,8 +33,11 @@ class TournamentEditionService:
         if not data.get("status"):
             raise ValidationError({"status": "This field is required."})
 
-        apply_phases = data.pop("apply_format_phases", True)
-        edition = TournamentEdition.objects.create(created_by=user, **data)
+        payload = dict(data)
+        apply_phases = payload.pop("apply_format_phases", True)
+        payload.pop("replace_format_phases", None)
+
+        edition = TournamentEdition.objects.create(created_by=user, **payload)
 
         fmt = edition.format
         if apply_phases and fmt is not None:
@@ -49,11 +52,12 @@ class TournamentEditionService:
     @transaction.atomic
     def update_edition(*, edition: TournamentEdition, data: dict) -> TournamentEdition:
         TournamentEditionService._validate_dates(data, edition=edition)
-        apply_phases = data.pop("apply_format_phases", False)
-        replace_phases = data.pop("replace_format_phases", False)
+        payload = dict(data)
+        apply_phases = payload.pop("apply_format_phases", False)
+        replace_phases = payload.pop("replace_format_phases", False)
 
         old_format_id = edition.format_id
-        for attr, value in data.items():
+        for attr, value in payload.items():
             setattr(edition, attr, value)
         edition.save()
 

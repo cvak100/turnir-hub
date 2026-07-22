@@ -14,12 +14,32 @@ from apps.users.permissions.utils import set_action_permission
 
 class TeamParticipationPlayerViewSet(viewsets.ModelViewSet):
     permission_classes = [HasTournamentPermission]
-    filterset_fields = ["team_participation", "player", "status", "is_captain"]
+    filterset_fields = [
+        "team_participation",
+        "player",
+        "status",
+        "is_captain",
+        "is_vice_captain",
+        "is_active",
+    ]
     search_fields = [
         "player__person__first_name",
         "player__person__last_name",
+        "player__person__nickname",
+        "team_participation__participation_name",
+        "team_participation__team__name",
     ]
-    ordering_fields = ["jersey_number", "created_at"]
+    ordering_fields = [
+        "jersey_number",
+        "created_at",
+        "goals",
+        "assists",
+        "matches_played",
+        "position",
+        "is_captain",
+        "player__person__last_name",
+        "player__person__first_name",
+    ]
     ordering = ["jersey_number"]
 
     def get_permissions(self):
@@ -40,6 +60,7 @@ class TeamParticipationPlayerViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = TeamParticipationPlayer.objects.select_related(
             "team_participation",
+            "team_participation__team",
             "team_participation__tournament_edition",
             "player",
             "player__person",

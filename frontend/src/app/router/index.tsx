@@ -5,6 +5,9 @@ import { RequireAdmin } from "@/app/router/RequireAdmin";
 import { RequireAuth } from "@/app/router/RequireAuth";
 import { RequirePermission } from "@/app/router/RequirePermission";
 import { AdminDashboardPage } from "@/modules/admin/pages/AdminDashboardPage";
+import { CatalogAdminPage } from "@/modules/admin/pages/CatalogAdminPage";
+import { GeneratorAdminPage } from "@/modules/admin/pages/GeneratorAdminPage";
+import { MatchesAdminPage } from "@/modules/admin/pages/MatchesAdminPage";
 import { PersonDetailPage } from "@/modules/admin/pages/PersonDetailPage";
 import { PersonFormPage } from "@/modules/admin/pages/PersonFormPage";
 import { PersonsAdminPage } from "@/modules/admin/pages/PersonsAdminPage";
@@ -12,6 +15,7 @@ import { TeamAdminDetailPage } from "@/modules/admin/pages/TeamDetailPage";
 import { TeamFormPage } from "@/modules/admin/pages/TeamFormPage";
 import { TeamsAdminPage } from "@/modules/admin/pages/TeamsAdminPage";
 import { TournamentAdminDetailPage } from "@/modules/admin/pages/TournamentDetailPage";
+import { TournamentEventsAdminPage } from "@/modules/admin/pages/TournamentEventsAdminPage";
 import { TournamentAdminFormPage } from "@/modules/admin/pages/TournamentFormPage";
 import { TournamentsAdminPage } from "@/modules/admin/pages/TournamentsAdminPage";
 import { AccountPage } from "@/modules/account/pages/AccountPage";
@@ -20,6 +24,8 @@ import { UnauthorizedPage } from "@/modules/auth/pages/UnauthorizedPage";
 import { DashboardPage } from "@/modules/dashboard/pages/DashboardPage";
 import { EditionDetailPage } from "@/modules/editions/pages/EditionDetailPage";
 import { EditionEditPage } from "@/modules/editions/pages/EditionEditPage";
+import { EditionEventsPage } from "@/modules/editions/pages/EditionEventsPage";
+import { EditionFinishPage } from "@/modules/editions/pages/EditionFinishPage";
 import { EditionMatchesPage } from "@/modules/editions/pages/EditionMatchesPage";
 import { EditionPhasesPage } from "@/modules/editions/pages/EditionPhasesPage";
 import { EditionPlayersPage } from "@/modules/editions/pages/EditionPlayersPage";
@@ -29,8 +35,10 @@ import { LiveIndexPage } from "@/modules/live/pages/LiveIndexPage";
 import { LiveMatchPage } from "@/modules/live/pages/LiveMatchPage";
 import { ManagePage } from "@/modules/manage/pages/ManagePage";
 import { MatchDetailPage } from "@/modules/matches/pages/MatchDetailPage";
+import { MatchEventEditPage } from "@/modules/matches/pages/MatchEventEditPage";
 import { PlayerCreatePage } from "@/modules/players/pages/PlayerCreatePage";
 import { PlayerDetailPage } from "@/modules/players/pages/PlayerDetailPage";
+import { PlayerEditPage } from "@/modules/players/pages/PlayerEditPage";
 import { PlayerListPage } from "@/modules/players/pages/PlayerListPage";
 import { StatsPage } from "@/modules/stats/pages/StatsPage";
 import { TeamCreatePage } from "@/modules/teams/pages/TeamCreatePage";
@@ -64,6 +72,18 @@ export function AppRouter() {
                 <Route
                   path="/dashboard_admin"
                   element={<AdminDashboardPage />}
+                />
+                <Route
+                  path="/dashboard_admin/generator"
+                  element={<GeneratorAdminPage />}
+                />
+                <Route
+                  path="/dashboard_admin/catalog"
+                  element={<CatalogAdminPage />}
+                />
+                <Route
+                  path="/dashboard_admin/matches"
+                  element={<MatchesAdminPage />}
                 />
                 <Route
                   path="/dashboard_admin/persons"
@@ -110,6 +130,10 @@ export function AppRouter() {
                   element={<TournamentAdminDetailPage />}
                 />
                 <Route
+                  path="/dashboard_admin/tournaments/:id/events"
+                  element={<TournamentEventsAdminPage />}
+                />
+                <Route
                   path="/dashboard_admin/tournaments/:id/edit"
                   element={<TournamentAdminFormPage mode="edit" />}
                 />
@@ -150,14 +174,27 @@ export function AppRouter() {
               path="/editions/:id/matches"
               element={<EditionMatchesPage />}
             />
+            <Route
+              path="/editions/:id/events"
+              element={<EditionEventsPage />}
+            />
+            <Route
+              path="/editions/:id/finish"
+              element={<EditionFinishPage />}
+            />
 
             <Route path="/teams" element={<TeamListPage />} />
             <Route path="/teams/:id" element={<TeamDetailPage />} />
 
             <Route path="/players" element={<PlayerListPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
+            <Route path="/players/:id/edit" element={<PlayerEditPage />} />
 
             <Route path="/matches/:id" element={<MatchDetailPage />} />
+            <Route
+              path="/match-events/:eventId/edit"
+              element={<MatchEventEditPage />}
+            />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

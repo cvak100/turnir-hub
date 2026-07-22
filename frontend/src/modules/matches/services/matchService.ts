@@ -40,6 +40,13 @@ export interface MatchListItem {
   id: number;
   tournament_phase: number;
   tournament_phase_group: number | null;
+  phase_name?: string;
+  phase_type?: string;
+  group_name?: string | null;
+  edition_id?: number;
+  edition_name?: string | null;
+  tournament_id?: number;
+  tournament_name?: string | null;
   match_number: number | null;
   match_date: string | null;
   status: StatusRef;
@@ -85,11 +92,17 @@ export interface MatchEventListItem {
   extra_minute: number | null;
   half: string;
   team_participation: number;
+  team_name?: string | null;
+  home_team_name?: string | null;
+  away_team_name?: string | null;
+  tournament_edition_id?: number;
   player: number | null;
+  player_name?: string | null;
   is_temporary_player: boolean;
   temporary_player_label: string;
   is_penalty: boolean;
   is_own_goal: boolean;
+  created_at?: string;
 }
 
 export interface MatchEventDetail extends MatchEventListItem {
@@ -115,10 +128,17 @@ export type MatchEventInput = {
   extra_minute?: number | null;
   player?: number | null;
   related_player?: number | null;
+  goal_type?: string;
+  body_part?: string;
+  is_penalty?: boolean;
+  is_own_goal?: boolean;
+  is_var_decision?: boolean;
+  var_result?: string;
+  description?: string;
+  score_home_at_event?: number | null;
+  score_away_at_event?: number | null;
   is_temporary_player?: boolean;
   temporary_player_label?: string;
-  is_own_goal?: boolean;
-  description?: string;
   notes?: string;
 };
 
@@ -250,11 +270,28 @@ export const matchService = {
   update(
     id: number,
     data: Partial<{
+      tournament_phase: number;
+      tournament_phase_group: number | null;
       home_team_participation: number | null;
       away_team_participation: number | null;
       match_number: number | null;
       match_date: string | null;
-      tournament_phase_group: number | null;
+      status: number;
+      home_score: number | null;
+      away_score: number | null;
+      halftime_home_score: number | null;
+      halftime_away_score: number | null;
+      extra_time_home_score: number | null;
+      extra_time_away_score: number | null;
+      home_score_penalties: number | null;
+      away_score_penalties: number | null;
+      is_extra_time: boolean;
+      is_penalties: boolean;
+      is_walkover: boolean;
+      duration_minutes: number | null;
+      attendance: number | null;
+      referee: number | null;
+      notes: string;
     }>,
   ) {
     return api.patch<MatchDetail>(`/matches/${id}/`, data);
@@ -268,8 +305,56 @@ export const matchService = {
     return api.post<MatchDetail>(`/matches/${id}/start/`);
   },
 
+  reopen(id: number) {
+    return api.post<MatchDetail>(`/matches/${id}/reopen/`);
+  },
+
   finish(id: number) {
     return api.post<MatchDetail>(`/matches/${id}/finish/`);
+  },
+
+  recalculate(id: number) {
+    return api.post<MatchDetail>(`/matches/${id}/recalculate/`);
+  },
+
+  setStatus(id: number, statusCode: string) {
+    return api.post<MatchDetail>(`/matches/${id}/set-status/`, {
+      status_code: statusCode,
+    });
+  },
+
+  bulkSetStatus(ids: number[], statusId: number) {
+    return api.post<{ ok: boolean; count: number }>("/matches/bulk-set-status/", {
+      ids,
+      status: statusId,
+    });
+  },
+
+  setPenalties(id: number, enabled = true) {
+    return api.post<MatchDetail>(`/matches/${id}/set-penalties/`, { enabled });
+  },
+
+  listStatuses() {
+    return api.get<MatchStatusItem[]>("/match-statuses/", { auth: false });
+  },
+};
+
+export type MatchStatusItem = {
+  id: number;
+  name: string;
+  code: string;
+  color: string;
+};
+
+export const matchStatusService = {
+  list() {
+    return api.get<MatchStatusItem[]>("/match-statuses/", { auth: false });
+  },
+};
+
+export const eventTypeService = {
+  list() {
+    return api.get<EventTypeRef[]>("/event-types/", { auth: false });
   },
 };
 
@@ -279,6 +364,10 @@ export const matchEventService = {
       params,
       auth: false,
     });
+  },
+
+  get(id: number) {
+    return api.get<MatchEventDetail>(`/match-events/${id}/`);
   },
 
   create(data: MatchEventInput) {
@@ -298,5 +387,9 @@ export const matchEventService = {
       ...(notes !== undefined ? { description: notes } : {}),
     };
     return api.patch<MatchEventDetail>(`/match-events/${id}/`, body);
+  },
+
+  delete(id: number) {
+    return api.delete<void>(`/match-events/${id}/`);
   },
 };

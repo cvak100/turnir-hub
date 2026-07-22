@@ -1,5 +1,6 @@
 from .category import TournamentCategory
 from .edition import TournamentEdition
+from .format_config import TournamentFormatConfig
 from .global_rule_template import GlobalRuleTemplate
 from .group import TournamentPhaseGroup, TournamentPhaseGroupTeam
 from .phase import TournamentPhase
@@ -22,6 +23,7 @@ __all__ = [
     "Template",
     "Tournament",
     "TournamentEdition",
+    "TournamentFormatConfig",
     "TournamentPhase",
     "TournamentPhaseGroup",
     "TournamentPhaseGroupTeam",

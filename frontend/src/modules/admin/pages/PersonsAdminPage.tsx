@@ -294,6 +294,7 @@ export function PersonsAdminPage() {
                       Email{sortMark("email")}
                     </button>
                   </th>
+                  <th>User</th>
                   <th>
                     <button
                       type="button"
@@ -334,6 +335,11 @@ export function PersonsAdminPage() {
                     </td>
                     <td>{person.nickname || "—"}</td>
                     <td>{person.email || "—"}</td>
+                    <td>
+                      {person.user
+                        ? `${person.user.username} (#${person.user.id})`
+                        : "—"}
+                    </td>
                     <td>
                       <div className="role-badges">
                         {person.roles.length === 0

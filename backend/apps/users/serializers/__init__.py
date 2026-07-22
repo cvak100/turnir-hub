@@ -1,4 +1,4 @@
-from .person import PersonMinimalSerializer
+from .person import PersonMinimalSerializer, PersonPublicSerializer
 from .person_full import (
     PersonCreateUpdateSerializer,
     PersonDetailSerializer,
@@ -10,6 +10,7 @@ from .person_full import (
 
 __all__ = [
     "PersonMinimalSerializer",
+    "PersonPublicSerializer",
     "PersonStatusSerializer",
     "PersonRoleTypeSerializer",
     "PersonRoleTypeBriefSerializer",

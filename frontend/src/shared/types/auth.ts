@@ -6,11 +6,20 @@ export interface UserRole {
   permissions: PermissionCode[];
 }
 
+export interface AuthPerson {
+  id: number;
+  first_name: string;
+  last_name: string;
+  nickname: string;
+  email: string;
+}
+
 export interface AuthUser {
   id: number;
   username: string;
   is_superuser: boolean;
   roles: UserRole[];
+  person: AuthPerson | null;
 }
 
 export interface AuthMeResponse {

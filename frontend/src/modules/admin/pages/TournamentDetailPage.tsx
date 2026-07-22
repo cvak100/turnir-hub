@@ -313,7 +313,7 @@ export function TournamentAdminDetailPage() {
         global_rule_template: editionForm.global_rule_template
           ? Number(editionForm.global_rule_template)
           : null,
-        apply_format_phases: editingId == null,
+        apply_format_phases: false,
       };
       if (editingId != null) {
         await adminEditionService.update(editingId, payload);
@@ -370,6 +370,12 @@ export function TournamentAdminDetailPage() {
         subtitle={data.sport?.name}
         actions={
           <>
+            <Link
+              className="button-link border-frame border-frame--sm"
+              to={`/dashboard_admin/tournaments/${data.id}/events`}
+            >
+              Dogodki
+            </Link>
             {isAdmin ? (
               <Link
                 className="button-link border-frame border-frame--sm"
@@ -471,6 +477,12 @@ export function TournamentAdminDetailPage() {
                         <div className="row-actions">
                           <Link className="linkish" to={`/editions/${ed.id}/phases`}>
                             Faze
+                          </Link>
+                          <Link
+                            className="linkish"
+                            to={`/dashboard_admin/tournaments/${tournamentId}/events?edition=${ed.id}`}
+                          >
+                            Dogodki
                           </Link>
                           <button
                             type="button"

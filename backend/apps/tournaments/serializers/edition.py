@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.core.validators import validate_image_file
 from apps.tournaments.models import TournamentEdition, TournamentFormat, TournamentStatus
 from apps.tournaments.serializers.category import TournamentCategorySerializer
+from apps.tournaments.serializers.format_config import TournamentFormatConfigSerializer
 from apps.tournaments.serializers.global_rule_template import (
     GlobalRuleTemplateSerializer,
 )
@@ -13,7 +14,7 @@ from apps.users.serializers import PersonMinimalSerializer
 class TournamentStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = TournamentStatus
-        fields = ["id", "name", "code", "color"]
+        fields = ["id", "name", "code", "color", "order", "is_active"]
 
 
 class TournamentFormatSerializer(serializers.ModelSerializer):
@@ -26,6 +27,7 @@ class TournamentFormatSerializer(serializers.ModelSerializer):
             "description",
             "default_phases",
             "order",
+            "is_active",
         ]
 
 
@@ -59,6 +61,7 @@ class TournamentEditionDetailSerializer(serializers.ModelSerializer):
     global_rule_template = GlobalRuleTemplateSerializer(read_only=True)
     format = TournamentFormatSerializer(read_only=True)
     category = TournamentCategorySerializer(read_only=True)
+    format_config = TournamentFormatConfigSerializer(read_only=True)
 
     class Meta:
         model = TournamentEdition
@@ -78,6 +81,7 @@ class TournamentEditionDetailSerializer(serializers.ModelSerializer):
             "format",
             "public_rules",
             "configuration",
+            "format_config",
             "global_rule_template",
             "location",
             "cover_image",

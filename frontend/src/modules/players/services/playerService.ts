@@ -4,6 +4,18 @@ import type { PersonMinimal, StatusRef } from "@/shared/types";
 
 export type PlayerStatus = StatusRef;
 
+export type PersonPublic = PersonMinimal & {
+  date_of_birth?: string | null;
+  place_of_birth?: string;
+  nationality_name?: string | null;
+  gender?: string;
+  photo?: string | null;
+  bio?: string;
+  city?: string;
+  country?: string;
+  show_as_anonymous?: boolean;
+};
+
 export interface PlayerListItem {
   id: number;
   person: PersonMinimal;
@@ -13,10 +25,14 @@ export interface PlayerListItem {
   is_active: boolean;
 }
 
-export interface PlayerDetail extends PlayerListItem {
+export interface PlayerDetail extends Omit<PlayerListItem, "person"> {
+  person: PersonPublic;
+  secondary_position: string;
   height_cm: number | null;
   weight_kg: number | null;
   dominant_foot: string;
+  current_club: string;
+  contract_until: string | null;
   nationality: string;
   photo: string | null;
   biography: string;
@@ -24,13 +40,59 @@ export interface PlayerDetail extends PlayerListItem {
   notes: string;
   created_at: string;
   updated_at: string;
+  awards?: PlayerAwardItem[];
+  team_awards?: PlayerTeamAwardItem[];
 }
 
+export type PlayerAwardPrize = {
+  id: number;
+  prize_type: string;
+  value: string | number | null;
+  description: string;
+  sponsor_name?: string | null;
+};
+
+export type PlayerAwardItem = {
+  id: number;
+  award_name: string;
+  award_code: string;
+  edition_id: number;
+  edition_name: string;
+  edition_year: number | null;
+  team_name?: string | null;
+  notes: string;
+  prizes: PlayerAwardPrize[];
+};
+
+export type PlayerTeamAwardItem = {
+  id: number;
+  kind: "prize" | "standing" | string;
+  title: string;
+  edition_id: number | null;
+  edition_name: string | null;
+  edition_year: number | null;
+  team_name?: string | null;
+  prize_type?: string | null;
+  value?: string | number | null;
+  description?: string;
+  position?: number | null;
+  qualification?: string;
+};
+
 export type PlayerInput = {
-  person: number;
+  person?: number;
   status?: number;
   position?: string;
+  secondary_position?: string;
   preferred_jersey_number?: number | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  dominant_foot?: string;
+  current_club?: string;
+  contract_until?: string | null;
+  nationality?: string;
+  biography?: string;
+  social_links?: unknown;
   is_active?: boolean;
   notes?: string;
 };
@@ -38,6 +100,11 @@ export type PlayerInput = {
 export interface TeamParticipationPlayerListItem {
   id: number;
   team_participation: number;
+  team_name?: string | null;
+  participation_name?: string | null;
+  tournament_edition_id?: number;
+  tournament_edition_name?: string | null;
+  tournament_edition_year?: number | null;
   player: PlayerListItem;
   jersey_number: number | null;
   position: string;
@@ -47,6 +114,10 @@ export interface TeamParticipationPlayerListItem {
   is_active: boolean;
   goals: number;
   assists: number;
+  yellow_cards?: number;
+  red_cards?: number;
+  matches_played?: number;
+  minutes_played?: number;
 }
 
 export type TeamParticipationPlayerInput = {
@@ -72,6 +143,10 @@ export const playerService = {
 
   create(data: PlayerInput) {
     return api.post<PlayerDetail>("/players/", data);
+  },
+
+  update(id: number, data: Partial<PlayerInput>) {
+    return api.patch<PlayerDetail>(`/players/${id}/`, data);
   },
 
   listStatuses() {

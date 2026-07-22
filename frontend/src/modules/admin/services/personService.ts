@@ -53,6 +53,11 @@ export type PlayerAttrs = {
   is_active?: boolean;
 };
 
+export type LinkedUser = {
+  id: number;
+  username: string;
+};
+
 export type PersonListItem = {
   id: number;
   first_name: string;
@@ -60,6 +65,7 @@ export type PersonListItem = {
   nickname: string;
   email: string;
   status: PersonStatus | null;
+  user: LinkedUser | null;
   show_as_anonymous: boolean;
   roles: PersonRoleBrief[];
   is_player: boolean;
@@ -107,6 +113,7 @@ export type PersonInput = {
   gender?: string;
   bio?: string;
   status?: number;
+  user?: number | null;
   email?: string;
   phone?: string;
   city?: string;

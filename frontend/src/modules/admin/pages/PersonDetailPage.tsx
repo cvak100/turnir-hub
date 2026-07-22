@@ -132,6 +132,14 @@ export function PersonDetailPage() {
         </p>
         <Field label="Spol" value={data.gender} />
         <Field label="Status" value={data.status?.name} />
+        <Field
+          label="Povezan račun"
+          value={
+            data.user
+              ? `${data.user.username} (id ${data.user.id})`
+              : "—"
+          }
+        />
         <Field label="Bio" value={data.bio} />
         <Field
           label="Anonimno"
