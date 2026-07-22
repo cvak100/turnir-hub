@@ -2709,6 +2709,221 @@ input.sketch-check:focus-visible {
   font-size: 1rem;
 }
 
+.edition-public-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.edition-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+}
+
+.edition-schedule-phase + .edition-schedule-phase {
+  margin-top: 0.85rem;
+}
+
+.edition-public-table__score {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.edition-knockout-rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.edition-knockout-round > h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+}
+
+.edition-stat-note {
+  margin: -0.35rem 0 0.85rem;
+}
+
+.edition-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+  align-items: stretch;
+}
+
+@media (max-width: 520px) {
+  .edition-stat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.edition-stat-block {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Teams and players: identical min size; grow if names wrap */
+.edition-stat-grid--teams .edition-stat-block,
+.edition-stat-grid--players .edition-stat-block {
+  min-height: 15rem;
+  height: auto;
+}
+
+.edition-stat-block h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+  min-height: 1.4em;
+  line-height: 1.3;
+}
+
+.edition-stat-block .muted {
+  margin: 0;
+}
+
+.edition-stat-table {
+  width: 100%;
+  table-layout: auto;
+}
+
+.edition-stat-table th,
+.edition-stat-table td {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Rank: as narrow as possible */
+.edition-stat-table th:first-child,
+.edition-stat-table td:first-child {
+  width: 1.5rem;
+  max-width: 1.5rem;
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Team tables: name column gets more space */
+.edition-stat-grid--teams .edition-stat-table th:nth-child(2),
+.edition-stat-grid--teams .edition-stat-table td:nth-child(2) {
+  width: 68%;
+  min-width: 8rem;
+}
+
+/* Player tables: player + team get more space */
+.edition-stat-grid--players .edition-stat-table th:nth-child(2),
+.edition-stat-grid--players .edition-stat-table td:nth-child(2),
+.edition-stat-grid--players .edition-stat-table th:nth-child(3),
+.edition-stat-grid--players .edition-stat-table td:nth-child(3) {
+  width: 34%;
+  min-width: 6rem;
+}
+
+.app-main .edition-public-table a.edition-entity-link,
+.app-main a.edition-entity-link {
+  display: inline;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  background-image: none !important;
+  padding-bottom: 0;
+  transform: none !important;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.app-main .edition-public-table a.edition-entity-link:hover,
+.app-main a.edition-entity-link:hover {
+  color: var(--ink);
+  background-color: color-mix(in srgb, var(--ink) 9%, transparent);
+  background-image: none !important;
+  transform: none !important;
+  text-decoration: none;
+}
+
+.app-main .edition-public-table a.edition-entity-link:focus-visible,
+.app-main a.edition-entity-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--blue) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.edition-public-table tbody tr.edition-public-table__row {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.edition-public-table tbody tr.edition-public-table__row:hover,
+.edition-public-table tbody tr.edition-public-table__row:focus-within,
+.edition-public-table tbody tr.edition-public-table__row:focus-visible {
+  background-color: color-mix(in srgb, var(--ink) 8%, transparent);
+  outline: none;
+}
+
+.edition-public-table__row-label {
+  font-weight: 600;
+}
+
+.app-main .edition-public-table a.edition-public-table__row-link {
+  position: static;
+  display: inline;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  background-image: none !important;
+  padding-bottom: 0;
+  transform: none !important;
+}
+
+.app-main .edition-public-table a.edition-public-table__row-link:hover {
+  color: var(--ink);
+  background-image: none !important;
+  transform: none !important;
+  text-decoration: none;
+}
+
+.edition-public-table__row-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.edition-public-table tbody tr.edition-public-table__row td {
+  position: relative;
+  z-index: 0;
+}
+
+.edition-sort-th {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+.edition-sort-th:hover {
+  color: var(--blue);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* Edition public pages: no horizontal scrollbars on tables */
+.page .table-scroll {
+  overflow: visible !important;
+}
+
 .home-lists-section {
   margin-bottom: 1rem;
 }

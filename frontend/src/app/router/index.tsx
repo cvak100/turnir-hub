@@ -29,6 +29,11 @@ import { EditionFinishPage } from "@/modules/editions/pages/EditionFinishPage";
 import { EditionMatchesPage } from "@/modules/editions/pages/EditionMatchesPage";
 import { EditionPhasesPage } from "@/modules/editions/pages/EditionPhasesPage";
 import { EditionPlayersPage } from "@/modules/editions/pages/EditionPlayersPage";
+import { EditionPublicPlayersPage } from "@/modules/editions/pages/EditionPublicPlayersPage";
+import { EditionPublicStatsPage } from "@/modules/editions/pages/EditionPublicStatsPage";
+import { EditionPublicTeamsPage } from "@/modules/editions/pages/EditionPublicTeamsPage";
+import { EditionSchedulePage } from "@/modules/editions/pages/EditionSchedulePage";
+import { EditionStandingsPage } from "@/modules/editions/pages/EditionStandingsPage";
 import { EditionTeamsPage } from "@/modules/editions/pages/EditionTeamsPage";
 import { HomePage } from "@/modules/home/pages/HomePage";
 import { LiveIndexPage } from "@/modules/live/pages/LiveIndexPage";
@@ -197,6 +202,26 @@ export function AppRouter() {
               <Route path="/players/:id/edit" element={<PlayerEditPage />} />
             </Route>
 
+            <Route
+              path="/editions/:id/standings"
+              element={<EditionStandingsPage />}
+            />
+            <Route
+              path="/editions/:id/schedule"
+              element={<EditionSchedulePage />}
+            />
+            <Route
+              path="/editions/:id/ekipe"
+              element={<EditionPublicTeamsPage />}
+            />
+            <Route
+              path="/editions/:id/igralci"
+              element={<EditionPublicPlayersPage />}
+            />
+            <Route
+              path="/editions/:id/statistika"
+              element={<EditionPublicStatsPage />}
+            />
             <Route path="/editions/:id" element={<EditionDetailPage />} />
 
             <Route path="/teams" element={<TeamListPage />} />

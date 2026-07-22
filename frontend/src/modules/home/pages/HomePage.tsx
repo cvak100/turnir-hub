@@ -151,11 +151,11 @@ function ActiveEditionCard({
       </div>
 
       <nav className="home-active-card__nav" aria-label={edition.name}>
-        <Link to={`${base}#standings`}>Lestvica</Link>
-        <Link to={`${base}#schedule`}>Razpored</Link>
-        <Link to={`${base}#teams`}>Ekipe</Link>
-        <Link to={`${base}#players`}>Igralci</Link>
-        <Link to={`/stats?edition=${edition.id}`}>Statistika</Link>
+        <Link to={`${base}/standings`}>Lestvica</Link>
+        <Link to={`${base}/schedule`}>Razpored</Link>
+        <Link to={`${base}/ekipe`}>Ekipe</Link>
+        <Link to={`${base}/igralci`}>Igralci</Link>
+        <Link to={`${base}/statistika`}>Statistika</Link>
       </nav>
     </article>
   );
