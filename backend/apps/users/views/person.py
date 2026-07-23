@@ -1,9 +1,10 @@
 import django_filters
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.players.models import TeamParticipationPlayer
 from apps.users.models import Person, PersonRole
 from apps.users.permissions import HasPermission
 from apps.users.permissions.utils import set_action_permission
@@ -28,6 +29,20 @@ class PersonFilter(django_filters.FilterSet):
     class Meta:
         model = Person
         fields = ["status", "show_as_anonymous", "role", "role_type"]
+
+
+_PUBLIC_PARTICIPATIONS = Prefetch(
+    "player__participations",
+    queryset=TeamParticipationPlayer.objects.select_related(
+        "team_participation",
+        "team_participation__team",
+        "team_participation__tournament_edition",
+    ).order_by(
+        "-team_participation__tournament_edition__end_date",
+        "-team_participation__tournament_edition__start_date",
+        "-id",
+    ),
+)
 
 
 class PersonViewSet(viewsets.ModelViewSet):
@@ -90,8 +105,12 @@ class PersonViewSet(viewsets.ModelViewSet):
             return (
                 qs.filter(show_as_anonymous=False)
                 .filter(
-                    player__participations__team_participation__tournament_edition__is_public=True
+                    Q(
+                        player__participations__team_participation__tournament_edition__is_public=True
+                    )
+                    | Q(person_roles__isnull=False)
                 )
+                .prefetch_related(_PUBLIC_PARTICIPATIONS)
                 .distinct()
             )
         return qs

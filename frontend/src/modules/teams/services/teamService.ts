@@ -9,6 +9,8 @@ export interface TeamListItem {
   city: string;
   logo: string | null;
   status: StatusRef | null;
+  players_count?: number;
+  appearances_count?: number;
 }
 
 export interface TeamDetail extends TeamListItem {

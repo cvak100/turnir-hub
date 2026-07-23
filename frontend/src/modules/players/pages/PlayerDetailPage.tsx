@@ -1,4 +1,4 @@
-﻿import { useMemo } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -18,6 +18,8 @@ import {
   participationPlayerService,
   playerService,
 } from "../services/playerService";
+
+const HISTORY_PREVIEW = 5;
 
 function displayName(
   person: {
@@ -47,6 +49,67 @@ function genderLabel(g: string | undefined): string {
   return g;
 }
 
+/** Stable DD.MM.YYYY — avoids broken locale output. */
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (m) return `${Number(m[3])}. ${Number(m[2])}. ${m[1]}`;
+  return iso.slice(0, 10);
+}
+
+function formatDateRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string {
+  const a = formatDate(start);
+  const b = formatDate(end);
+  if (!a && !b) return "";
+  if (a === b) return a;
+  return `${a} – ${b}`;
+}
+
+function sloCount(
+  n: number,
+  one: string,
+  few: string,
+  many: string,
+): string {
+  if (n === 1) return one;
+  if (n === 2 || n === 3 || n === 4) return few;
+  return many;
+}
+
+function matchStatsLabel(row: {
+  matches_played?: number;
+  goals: number;
+  assists: number;
+  yellow_cards?: number;
+  red_cards?: number;
+  minutes_played?: number;
+}): string {
+  const matches = row.matches_played ?? 0;
+  const goals = row.goals || 0;
+  const assists = row.assists || 0;
+  const parts = [
+    `${matches} ${sloCount(matches, "tekma", "tekme", "tekem")}`,
+    `${goals} ${sloCount(goals, "gol", "gola", "golov")}`,
+    `${assists} ${sloCount(assists, "asistenca", "asistence", "asistenc")}`,
+  ];
+  const yellow = row.yellow_cards ?? 0;
+  const red = row.red_cards ?? 0;
+  if (yellow > 0) {
+    parts.push(
+      `${yellow} ${sloCount(yellow, "rumena", "rumene", "rumenih")}`,
+    );
+  }
+  if (red > 0) {
+    parts.push(`${red} ${sloCount(red, "rdeča", "rdeče", "rdečih")}`);
+  }
+  const minutes = row.minutes_played ?? 0;
+  if (minutes > 0) parts.push(`${minutes} min`);
+  return parts.join(" · ");
+}
+
 export function PlayerDetailPage() {
   const { id } = useParams();
   const playerId = Number(id);
@@ -73,6 +136,8 @@ export function PlayerDetailPage() {
   );
 
   const canEdit = isAdmin || hasPermission("player.manage");
+  const [teamsExpanded, setTeamsExpanded] = useState(false);
+  const [eventsExpanded, setEventsExpanded] = useState(false);
 
   const stats = useMemo(() => {
     const list = assignments.data?.results ?? [];
@@ -120,25 +185,14 @@ export function PlayerDetailPage() {
     return [...map.values()];
   }, [assignments.data]);
 
-  const matchesByEdition = useMemo(() => {
-    const map = new Map<
-      number,
-      { id: number; label: string }[]
-    >();
-    const seen = new Map<number, Set<number>>();
-    for (const ev of events.data?.results ?? []) {
-      const ed = ev.tournament_edition_id;
-      if (ed == null) continue;
-      if (!seen.has(ed)) seen.set(ed, new Set());
-      if (seen.get(ed)!.has(ev.match)) continue;
-      seen.get(ed)!.add(ev.match);
-      const label = `${ev.home_team_name ?? "?"} vs ${ev.away_team_name ?? "?"}`;
-      const list = map.get(ed) ?? [];
-      list.push({ id: ev.match, label });
-      map.set(ed, list);
-    }
-    return map;
-  }, [events.data]);
+  const teamHistory = assignments.data?.results ?? [];
+  const eventHistory = events.data?.results ?? [];
+  const visibleTeams = teamsExpanded
+    ? teamHistory
+    : teamHistory.slice(0, HISTORY_PREVIEW);
+  const visibleEvents = eventsExpanded
+    ? eventHistory
+    : eventHistory.slice(0, HISTORY_PREVIEW);
 
   if (!Number.isFinite(playerId)) {
     return <StateMessage variant="error" message="Neveljaven igralec." />;
@@ -161,22 +215,14 @@ export function PlayerDetailPage() {
             : "Profil igralca"
         }
         actions={
-          <>
-            {canEdit ? (
-              <Link
-                className="button-link border-frame border-frame--sm"
-                to={`/players/${playerId}/edit`}
-              >
-                Uredi
-              </Link>
-            ) : null}
+          canEdit ? (
             <Link
               className="button-link border-frame border-frame--sm"
-              to="/players"
+              to={`/players/${playerId}/edit`}
             >
-              Seznam
+              Uredi
             </Link>
-          </>
+          ) : undefined
         }
       />
 
@@ -454,118 +500,134 @@ export function PlayerDetailPage() {
             {assignments.loading ? (
               <StateMessage variant="loading" />
             ) : null}
-            {!assignments.loading &&
-            (assignments.data?.results.length ?? 0) === 0 ? (
+            {!assignments.loading && teamHistory.length === 0 ? (
               <p className="muted">Ni prijav na ekipah.</p>
             ) : null}
-            {(assignments.data?.results.length ?? 0) > 0 ? (
-              <ul className="player-history">
-                {(assignments.data?.results ?? []).map((row) => {
-                  const editionMatches =
-                    row.tournament_edition_id != null
-                      ? (matchesByEdition.get(row.tournament_edition_id) ?? [])
-                      : [];
-                  return (
-                    <li key={row.id} className="player-history__item">
-                      <div className="player-history__main">
-                        <strong>
-                          {row.participation_name || row.team_name || "Ekipa"}
-                        </strong>
-                        <span className="muted">
-                          {" "}
-                          ·{" "}
-                          {row.tournament_edition_name
-                            ? `${row.tournament_edition_name}${
-                                row.tournament_edition_year
-                                  ? ` (${row.tournament_edition_year})`
-                                  : ""
-                              }`
-                            : "Edicija"}
-                        </span>
-                      </div>
-                      <div className="player-history__meta muted">
-                        {row.jersey_number != null
-                          ? `#${row.jersey_number}`
-                          : "—"}
-                        {" · "}
-                        {row.position || "—"}
-                        {row.is_captain ? " · Kapetan" : ""}
-                        {row.is_vice_captain ? " · Podkapetan" : ""}
-                        {" · "}
-                        {row.matches_played ?? 0} tekme · {row.goals}G ·{" "}
-                        {row.assists}A
-                      </div>
-                      {editionMatches.length > 0 ? (
-                        <ul className="player-history__matches">
-                          {editionMatches.map((m) => (
-                            <li key={m.id}>
-                              <Link
-                                className="linkish"
-                                to={`/matches/${m.id}`}
-                              >
-                                {m.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="muted player-history__matches-empty">
-                          Ni tekem z dogodki.
-                        </p>
-                      )}
-                      {row.tournament_edition_id != null ? (
-                        <Link
-                          className="linkish"
-                          to={`/editions/${row.tournament_edition_id}/matches`}
-                        >
-                          Vse tekme edicije
-                        </Link>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
+            {teamHistory.length > 0 ? (
+              <>
+                <ul className="player-history">
+                  {visibleTeams.map((row) => {
+                    const teamLabel = row.team_name || row.participation_name || "Ekipa";
+                    const editionLabel =
+                      row.tournament_edition_name || "Edicija";
+                    const dateLabel = formatDateRange(
+                      row.tournament_edition_start_date,
+                      row.tournament_edition_end_date,
+                    );
+                    const roleBits = [
+                      row.jersey_number != null ? `#${row.jersey_number}` : null,
+                      row.is_captain ? "Kapetan" : null,
+                      row.is_vice_captain ? "Podkapetan" : null,
+                    ].filter(Boolean);
+
+                    return (
+                      <li key={row.id} className="player-history__item">
+                        <div className="player-history__main">
+                          {row.team_id != null ? (
+                            <Link
+                              className="player-history__inline-link"
+                              to={`/teams/${row.team_id}`}
+                            >
+                              <strong>{teamLabel}</strong>
+                            </Link>
+                          ) : (
+                            <strong>{teamLabel}</strong>
+                          )}
+                          <span className="muted"> · </span>
+                          {row.tournament_edition_id != null ? (
+                            <Link
+                              className="player-history__inline-link muted"
+                              to={`/editions/${row.tournament_edition_id}`}
+                            >
+                              {editionLabel}
+                            </Link>
+                          ) : (
+                            <span className="muted">{editionLabel}</span>
+                          )}
+                        </div>
+                        {dateLabel ? (
+                          <div className="player-history__meta muted">
+                            {dateLabel}
+                          </div>
+                        ) : null}
+                        {roleBits.length > 0 ? (
+                          <div className="player-history__meta muted">
+                            {roleBits.join(" · ")}
+                          </div>
+                        ) : null}
+                        <div className="player-history__meta">
+                          {matchStatsLabel(row)}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {teamHistory.length > HISTORY_PREVIEW ? (
+                  <button
+                    type="button"
+                    className="button-link border-frame border-frame--sm player-history__more"
+                    onClick={() => setTeamsExpanded((v) => !v)}
+                  >
+                    {teamsExpanded
+                      ? "Manj"
+                      : `Več (${teamHistory.length - HISTORY_PREVIEW})`}
+                  </button>
+                ) : null}
+              </>
             ) : null}
           </section>
 
           <section className="border-frame border-frame--md">
             <h2>Zgodovina dogodkov</h2>
             {events.loading ? <StateMessage variant="loading" /> : null}
-            {!events.loading && (events.data?.results.length ?? 0) === 0 ? (
+            {!events.loading && eventHistory.length === 0 ? (
               <p className="muted">Ni zabeleženih dogodkov.</p>
             ) : null}
-            {(events.data?.results.length ?? 0) > 0 ? (
-              <ul className="player-history">
-                {(events.data?.results ?? []).map((ev) => (
-                  <li key={ev.id} className="player-history__item">
-                    <Link
-                      className="player-history__link"
-                      to={`/matches/${ev.match}`}
-                    >
-                      <div className="player-history__main">
-                        <strong>
-                          {ev.minute}
-                          {ev.extra_minute != null
-                            ? `+${ev.extra_minute}`
-                            : ""}
-                          '
-                        </strong>{" "}
-                        · {halfDisplayLabel(ev.half)} ·{" "}
-                        {eventLabelWithIcon(
-                          ev.event_type.code,
-                          ev.event_type.name,
-                        )}
-                        {ev.is_own_goal ? " (AG)" : ""}
-                      </div>
-                      <div className="player-history__meta muted">
-                        {ev.home_team_name ?? "?"} vs{" "}
-                        {ev.away_team_name ?? "?"}
-                        {ev.team_name ? ` · ${ev.team_name}` : ""}
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            {eventHistory.length > 0 ? (
+              <>
+                <ul className="player-history player-history--events">
+                  {visibleEvents.map((ev) => (
+                    <li key={ev.id} className="player-history__item">
+                      <Link
+                        className="player-history__link"
+                        to={`/matches/${ev.match}`}
+                      >
+                        <div className="player-history__main">
+                          <strong>
+                            {ev.minute}
+                            {ev.extra_minute != null
+                              ? `+${ev.extra_minute}`
+                              : ""}
+                            '
+                          </strong>{" "}
+                          · {halfDisplayLabel(ev.half)} ·{" "}
+                          {eventLabelWithIcon(
+                            ev.event_type.code,
+                            ev.event_type.name,
+                          )}
+                          {ev.is_own_goal ? " (AG)" : ""}
+                        </div>
+                        <div className="player-history__meta muted">
+                          {ev.home_team_name ?? "?"} vs{" "}
+                          {ev.away_team_name ?? "?"}
+                          {ev.team_name ? ` · ${ev.team_name}` : ""}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                {eventHistory.length > HISTORY_PREVIEW ? (
+                  <button
+                    type="button"
+                    className="button-link border-frame border-frame--sm player-history__more"
+                    onClick={() => setEventsExpanded((v) => !v)}
+                  >
+                    {eventsExpanded
+                      ? "Manj"
+                      : `Več (${eventHistory.length - HISTORY_PREVIEW})`}
+                  </button>
+                ) : null}
+              </>
             ) : null}
           </section>
         </>

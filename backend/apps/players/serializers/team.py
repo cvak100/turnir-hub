@@ -26,10 +26,27 @@ class TeamStatusSerializer(serializers.ModelSerializer):
 
 class TeamListSerializer(serializers.ModelSerializer):
     status = TeamStatusSerializer(read_only=True)
+    players_count = serializers.SerializerMethodField()
+    appearances_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Team
-        fields = ["id", "name", "short_name", "city", "logo", "status"]
+        fields = [
+            "id",
+            "name",
+            "short_name",
+            "city",
+            "logo",
+            "status",
+            "players_count",
+            "appearances_count",
+        ]
+
+    def get_players_count(self, obj) -> int:
+        return int(getattr(obj, "players_count", 0) or 0)
+
+    def get_appearances_count(self, obj) -> int:
+        return int(getattr(obj, "appearances_count", 0) or 0)
 
 
 class TeamDetailSerializer(serializers.ModelSerializer):

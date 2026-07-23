@@ -7,3 +7,5 @@ export { ShirtColorBadge } from "./ShirtColorBadge";
 export { KitPreview } from "./KitPreview";
 export { IntegerStepper } from "./IntegerStepper";
 export { StatusHelpHint, EDITION_STATUS_HELP, TEAM_PARTICIPATION_STATUS_HELP } from "./StatusHelpHint";
+export { PublicSortTh, cmpStr, cmpNum } from "./PublicSortTh";
+export type { SortDir } from "./PublicSortTh";

@@ -1,8 +1,10 @@
+from django.db.models import Count, IntegerField, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from apps.players.models import Team
+from apps.players.models import Team, TeamParticipation, TeamParticipationPlayer
 from apps.players.serializers.team import (
     TeamCreateUpdateSerializer,
     TeamDetailSerializer,
@@ -11,6 +13,41 @@ from apps.players.serializers.team import (
 from apps.players.services.team import TeamService
 from apps.users.permissions import HasPermission
 from apps.users.permissions.utils import set_action_permission
+
+
+def _annotate_team_counts(qs, *, public_only: bool):
+    appearances = TeamParticipation.objects.filter(team_id=OuterRef("pk"))
+    players = TeamParticipationPlayer.objects.filter(
+        team_participation__team_id=OuterRef("pk"),
+    )
+    if public_only:
+        appearances = appearances.filter(tournament_edition__is_public=True)
+        players = players.filter(
+            team_participation__tournament_edition__is_public=True,
+        )
+
+    appearances_sq = (
+        appearances.order_by()
+        .values("team_id")
+        .annotate(c=Count("id"))
+        .values("c")[:1]
+    )
+    players_sq = (
+        players.order_by()
+        .values("team_participation__team_id")
+        .annotate(c=Count("player_id", distinct=True))
+        .values("c")[:1]
+    )
+    return qs.annotate(
+        appearances_count=Coalesce(
+            Subquery(appearances_sq, output_field=IntegerField()),
+            0,
+        ),
+        players_count=Coalesce(
+            Subquery(players_sq, output_field=IntegerField()),
+            0,
+        ),
+    )
 
 
 class TeamViewSet(viewsets.ModelViewSet):
@@ -40,13 +77,15 @@ class TeamViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.action in ("list", "retrieve"):
-            # Public list: teams that appear on at least one public edition,
-            # or all teams when user has full access via authenticated manage flows.
-            if not self.request.user.is_authenticated:
-                return qs.filter(
-                    participations__tournament_edition__is_public=True
-                ).distinct()
+        public_only = not getattr(self.request.user, "is_authenticated", False)
+
+        if self.action in ("list", "retrieve") and public_only:
+            qs = qs.filter(
+                participations__tournament_edition__is_public=True
+            ).distinct()
+
+        if self.action == "list":
+            qs = _annotate_team_counts(qs, public_only=public_only)
         return qs
 
     def get_serializer_class(self):

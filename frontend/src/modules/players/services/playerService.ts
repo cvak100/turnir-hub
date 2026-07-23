@@ -100,11 +100,14 @@ export type PlayerInput = {
 export interface TeamParticipationPlayerListItem {
   id: number;
   team_participation: number;
+  team_id?: number | null;
   team_name?: string | null;
   participation_name?: string | null;
   tournament_edition_id?: number;
   tournament_edition_name?: string | null;
   tournament_edition_year?: number | null;
+  tournament_edition_start_date?: string | null;
+  tournament_edition_end_date?: string | null;
   player: PlayerListItem;
   jersey_number: number | null;
   position: string;

@@ -7,6 +7,11 @@ from apps.players.serializers.player import PlayerListSerializer, PlayerStatusSe
 class TeamParticipationPlayerListSerializer(serializers.ModelSerializer):
     player = PlayerListSerializer(read_only=True)
     status = PlayerStatusSerializer(read_only=True)
+    team_id = serializers.IntegerField(
+        source="team_participation.team_id",
+        read_only=True,
+        allow_null=True,
+    )
     team_name = serializers.CharField(
         source="team_participation.team.name",
         read_only=True,
@@ -31,17 +36,30 @@ class TeamParticipationPlayerListSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
+    tournament_edition_start_date = serializers.DateField(
+        source="team_participation.tournament_edition.start_date",
+        read_only=True,
+        allow_null=True,
+    )
+    tournament_edition_end_date = serializers.DateField(
+        source="team_participation.tournament_edition.end_date",
+        read_only=True,
+        allow_null=True,
+    )
 
     class Meta:
         model = TeamParticipationPlayer
         fields = [
             "id",
             "team_participation",
+            "team_id",
             "team_name",
             "participation_name",
             "tournament_edition_id",
             "tournament_edition_name",
             "tournament_edition_year",
+            "tournament_edition_start_date",
+            "tournament_edition_end_date",
             "player",
             "jersey_number",
             "position",
@@ -61,6 +79,11 @@ class TeamParticipationPlayerListSerializer(serializers.ModelSerializer):
 class TeamParticipationPlayerDetailSerializer(serializers.ModelSerializer):
     player = PlayerListSerializer(read_only=True)
     status = PlayerStatusSerializer(read_only=True)
+    team_id = serializers.IntegerField(
+        source="team_participation.team_id",
+        read_only=True,
+        allow_null=True,
+    )
     team_name = serializers.CharField(
         source="team_participation.team.name",
         read_only=True,
@@ -85,17 +108,30 @@ class TeamParticipationPlayerDetailSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
+    tournament_edition_start_date = serializers.DateField(
+        source="team_participation.tournament_edition.start_date",
+        read_only=True,
+        allow_null=True,
+    )
+    tournament_edition_end_date = serializers.DateField(
+        source="team_participation.tournament_edition.end_date",
+        read_only=True,
+        allow_null=True,
+    )
 
     class Meta:
         model = TeamParticipationPlayer
         fields = [
             "id",
             "team_participation",
+            "team_id",
             "team_name",
             "participation_name",
             "tournament_edition_id",
             "tournament_edition_name",
             "tournament_edition_year",
+            "tournament_edition_start_date",
+            "tournament_edition_end_date",
             "player",
             "jersey_number",
             "position",

@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import {
   ErrorBanner,
   PageHeader,
+  PublicSortTh,
   StateMessage,
+  cmpNum,
+  cmpStr,
+  type SortDir,
 } from "@/shared/components";
 import { useAsyncData } from "@/shared/hooks/useAsyncData";
 import {
@@ -13,6 +17,7 @@ import {
 } from "@/modules/public/services/publicApi";
 
 type FilterKey = "all" | EditionBucket;
+type SortKey = "edition" | "tournament" | "year" | "date";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Vsi" },
@@ -28,7 +33,6 @@ function formatDayMonth(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) {
-    // YYYY-MM-DD fallback
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
     if (m) return `${m[3]}.${m[2]}.`;
     return iso;
@@ -47,21 +51,65 @@ function formatDateRange(
   return a || b;
 }
 
+function dateSortValue(iso: string | null | undefined): number {
+  if (!iso) return 0;
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
 export function TournamentListPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] =
     useState<(typeof PAGE_SIZE_OPTIONS)[number]>(DEFAULT_PAGE_SIZE);
+  const [sortKey, setSortKey] = useState<SortKey>("year");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const list = useAsyncData(() => publicApi.listEditions(), []);
+
+  function onSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "year" || key === "date" ? "desc" : "asc");
+    }
+    setPage(1);
+  }
 
   const rows = useMemo(() => {
     const all = (list.data?.results ?? []).filter(
       (e) => (e.status?.code ?? "").toLowerCase() !== "draft",
     );
-    if (filter === "all") return all;
-    return all.filter((e) => editionBucket(e.status?.code) === filter);
-  }, [filter, list.data]);
+    const filtered =
+      filter === "all"
+        ? all
+        : all.filter((e) => editionBucket(e.status?.code) === filter);
+    const mul = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      let c = 0;
+      switch (sortKey) {
+        case "edition":
+          c = cmpStr(a.name || "", b.name || "");
+          break;
+        case "tournament":
+          c = cmpStr(a.tournament_name || "", b.tournament_name || "");
+          break;
+        case "year":
+          c = cmpNum(a.year ?? 0, b.year ?? 0);
+          break;
+        case "date":
+          c = cmpNum(
+            dateSortValue(a.start_date),
+            dateSortValue(b.start_date),
+          );
+          break;
+        default:
+          c = 0;
+      }
+      return c * mul;
+    });
+  }, [filter, list.data, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
 
@@ -114,10 +162,34 @@ export function TournamentListPage() {
             <table className="data-table public-table">
               <thead>
                 <tr>
-                  <th>Edicija</th>
-                  <th>Turnir</th>
-                  <th>Leto</th>
-                  <th>Datum</th>
+                  <PublicSortTh
+                    label="Edicija"
+                    sortKey="edition"
+                    active={sortKey}
+                    dir={sortDir}
+                    onSort={onSort}
+                  />
+                  <PublicSortTh
+                    label="Turnir"
+                    sortKey="tournament"
+                    active={sortKey}
+                    dir={sortDir}
+                    onSort={onSort}
+                  />
+                  <PublicSortTh
+                    label="Leto"
+                    sortKey="year"
+                    active={sortKey}
+                    dir={sortDir}
+                    onSort={onSort}
+                  />
+                  <PublicSortTh
+                    label="Datum"
+                    sortKey="date"
+                    active={sortKey}
+                    dir={sortDir}
+                    onSort={onSort}
+                  />
                 </tr>
               </thead>
               <tbody>
@@ -167,23 +239,24 @@ export function TournamentListPage() {
               {from}–{to} / {rows.length}
               {rows.length > pageSize ? ` · stran ${page}/${totalPages}` : ""}
             </span>
-            <label className="edition-pager__size muted">
-              Na stran
-              <select
-                value={pageSize}
-                onChange={(e) =>
-                  setPageSize(
-                    Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number],
-                  )
-                }
-              >
-                {PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="edition-pager__size" role="group" aria-label="Na stran">
+              <span className="muted">Na stran</span>
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={
+                    pageSize === n
+                      ? "edition-pager__size-btn edition-pager__size-btn--active"
+                      : "edition-pager__size-btn"
+                  }
+                  aria-pressed={pageSize === n}
+                  onClick={() => setPageSize(n)}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               className="button-link border-frame border-frame--sm"

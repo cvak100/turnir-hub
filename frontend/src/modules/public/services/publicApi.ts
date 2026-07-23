@@ -17,6 +17,12 @@ import type { TeamParticipationPlayerListItem } from "@/modules/players/services
 /** Guest-safe API reads (no JWT) — always public edition scoped on the backend. */
 const guest = { auth: false as const };
 
+export type PublicPersonRole = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export type PublicPerson = {
   id: number;
   first_name: string;
@@ -29,6 +35,10 @@ export type PublicPerson = {
   country?: string;
   bio?: string;
   show_as_anonymous?: boolean;
+  player_id?: number | null;
+  last_club?: string | null;
+  matches_played?: number;
+  roles?: PublicPersonRole[];
 };
 
 export type FinalStandingRow = {
@@ -156,6 +166,16 @@ export const publicApi = {
     );
   },
 
+  listPlayers(params?: QueryParams) {
+    return api.get<PaginatedResponse<TeamParticipationPlayerListItem>>(
+      "/team-participation-players/",
+      {
+        params: { page_size: 500, ...params },
+        ...guest,
+      },
+    );
+  },
+
   listPersons(params?: QueryParams) {
     return api.get<PaginatedResponse<PublicPerson>>("/persons/", {
       params: { page_size: 100, ...params },
@@ -178,6 +198,16 @@ export const publicApi = {
       "/player-awards/",
       {
         params: { tournament_edition: editionId, page_size: 100 },
+        ...guest,
+      },
+    );
+  },
+
+  listAllAwards(params?: QueryParams) {
+    return api.get<PaginatedResponse<PlayerAwardRow> | PlayerAwardRow[]>(
+      "/player-awards/",
+      {
+        params: { page_size: 200, ...params },
         ...guest,
       },
     );
