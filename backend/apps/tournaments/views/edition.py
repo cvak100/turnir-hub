@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -24,6 +25,7 @@ from apps.tournaments.services.format_generation import (
 )
 from apps.users.permissions import HasTournamentPermission
 from apps.users.permissions.utils import set_action_permission
+from apps.users.services.permissions import PermissionService
 
 
 class TournamentEditionViewSet(viewsets.ModelViewSet):
@@ -73,12 +75,20 @@ class TournamentEditionViewSet(viewsets.ModelViewSet):
         fmt = self.request.query_params.get("format")
         if fmt:
             qs = qs.filter(format_id=fmt)
-        return scope_public_or_accessible(
+        qs = scope_public_or_accessible(
             self.request.user,
             qs,
             public_lookup="is_public",
             edition_lookup="id",
         )
+        # Draft editions are never public; only visible via role access / admin.
+        user = self.request.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return qs.exclude(status__code="draft")
+        accessible = PermissionService.get_accessible_edition_ids(user)
+        if accessible is None:
+            return qs
+        return qs.exclude(Q(status__code="draft") & ~Q(id__in=accessible or []))
 
     def get_serializer_class(self):
         if self.action == "list":

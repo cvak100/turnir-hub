@@ -33,5 +33,8 @@ export function getVisibleMenuItems(
   ctx: MenuVisibilityContext,
   config: MenuItemConfig[] = MENU_CONFIG,
 ): MenuItemConfig[] {
-  return config.filter((item) => matchesAccess(item.access, ctx));
+  return config.filter((item) => {
+    if (item.id === "manage" && ctx.isAdmin) return false;
+    return matchesAccess(item.access, ctx);
+  });
 }

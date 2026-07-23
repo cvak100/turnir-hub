@@ -549,7 +549,7 @@ input.sketch-check:focus-visible {
   position: relative;
 }
 
-.data-table tbody tr:not(:last-child)::after {
+.data-table tbody tr::after {
   content: "";
   position: absolute;
   bottom: 0;
@@ -562,7 +562,13 @@ input.sketch-check:focus-visible {
   pointer-events: none;
 }
 
-.data-table tbody tr:hover::after {
+/* Last row: no permanent separator, but still show blue underline on hover */
+.data-table tbody tr:last-child::after {
+  background-image: none;
+}
+
+.data-table tbody tr:hover::after,
+.data-table tbody tr:focus-within::after {
   background-image: var(--rule-blue);
 }
 
@@ -2511,12 +2517,193 @@ input.sketch-check:focus-visible {
   border: 2px solid var(--red);
   padding: 0.1rem 0.4rem;
   transform: rotate(-2deg);
+  flex-shrink: 0;
 }
 
-.public-live-stack {
+.public-live-stack,
+.live-index-stack {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+.app-main a.live-index-card,
+.app-main a.live-index-card:hover {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  color: var(--ink);
+  text-decoration: none;
+  background-image: none !important;
+  transform: none !important;
+  transition: background-color 0.12s ease;
+}
+
+.app-main a.live-index-card:hover,
+.app-main a.live-index-card:focus-visible {
+  background-color: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+  text-decoration: none;
+  background-image: none !important;
+  transform: none !important;
+  outline: none;
+}
+
+.live-index-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.live-index-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.live-index-card__edition {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.live-index-card__phase {
+  font-size: 0.9rem;
+}
+
+.live-index-card__scoreboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+  padding: 0.35rem 0;
+}
+
+.live-index-card__team {
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.live-index-card__team--home {
+  text-align: right;
+}
+
+.live-index-card__team--away {
+  text-align: left;
+}
+
+.live-index-card__score {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-align: center;
+  min-width: 3.5rem;
+}
+
+.live-index-card__score-sep {
+  margin: 0 0.1rem;
+  opacity: 0.7;
+}
+
+.live-index-card__feed {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem 0.85rem;
+  padding-top: 0.25rem;
+}
+
+.live-index-card__col {
+  min-width: 0;
+}
+
+.live-index-card__events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.live-index-card__event {
+  display: grid;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.live-index-card__col--home .live-index-card__event {
+  grid-template-columns: minmax(0, 1fr) 1.35rem 2.5rem;
+  justify-items: end;
+}
+
+.live-index-card__col--home .live-index-card__event-player {
+  text-align: right;
+}
+
+.live-index-card__col--away .live-index-card__event {
+  grid-template-columns: 2.5rem 1.35rem minmax(0, 1fr);
+  justify-items: start;
+}
+
+.live-index-card__col--away .live-index-card__event-player {
+  text-align: left;
+}
+
+.live-index-card__event-min {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  white-space: nowrap;
+}
+
+.live-index-card__event-icon {
+  text-align: center;
+  line-height: 1;
+  font-size: 1.05rem;
+}
+
+.live-index-card__event-player {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.live-index-card__empty-events {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 560px) {
+  .live-index-card__scoreboard {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    text-align: center;
+  }
+
+  .live-index-card__team--home,
+  .live-index-card__team--away {
+    text-align: center;
+  }
+
+  .live-index-card__score {
+    order: -1;
+  }
+
+  .live-index-card__feed {
+    grid-template-columns: 1fr;
+  }
+
+  .live-index-card__col--home .live-index-card__event {
+    grid-template-columns: minmax(0, 1fr) 1.35rem 2.5rem;
+  }
 }
 
 .live-card {
@@ -2860,27 +3047,39 @@ input.sketch-check:focus-visible {
   outline-offset: 2px;
 }
 
-.edition-public-table tbody tr.edition-public-table__row {
+/* Public clickable tables ? shared template (tournaments, editions, ?) */
+.data-table.public-table tbody tr.public-table__row,
+.data-table.edition-public-table tbody tr.edition-public-table__row,
+.data-table.edition-public-table tbody tr.public-table__row {
   position: relative;
   cursor: pointer;
   transition: background-color 0.12s ease;
 }
 
-.edition-public-table tbody tr.edition-public-table__row:hover,
-.edition-public-table tbody tr.edition-public-table__row:focus-within,
-.edition-public-table tbody tr.edition-public-table__row:focus-visible {
+.data-table.public-table tbody tr.public-table__row:hover,
+.data-table.public-table tbody tr.public-table__row:focus-within,
+.data-table.public-table tbody tr.public-table__row:focus-visible,
+.data-table.edition-public-table tbody tr.edition-public-table__row:hover,
+.data-table.edition-public-table tbody tr.edition-public-table__row:focus-within,
+.data-table.edition-public-table tbody tr.edition-public-table__row:focus-visible,
+.data-table.edition-public-table tbody tr.public-table__row:hover,
+.data-table.edition-public-table tbody tr.public-table__row:focus-within,
+.data-table.edition-public-table tbody tr.public-table__row:focus-visible {
   background-color: color-mix(in srgb, var(--ink) 8%, transparent);
   outline: none;
 }
 
+.public-table__row-label,
 .edition-public-table__row-label {
   font-weight: 600;
 }
 
-.app-main .edition-public-table a.edition-public-table__row-link {
-  position: static;
-  display: inline;
-  font-weight: 600;
+.app-main .data-table.public-table a,
+.app-main .data-table.public-table a:hover,
+.app-main .data-table.edition-public-table a.edition-public-table__row-link,
+.app-main .data-table.edition-public-table a.edition-public-table__row-link:hover,
+.app-main .data-table.edition-public-table a.edition-entity-link,
+.app-main .data-table.edition-public-table a.edition-entity-link:hover {
   color: var(--ink);
   text-decoration: none;
   background-image: none !important;
@@ -2888,22 +3087,49 @@ input.sketch-check:focus-visible {
   transform: none !important;
 }
 
-.app-main .edition-public-table a.edition-public-table__row-link:hover {
-  color: var(--ink);
-  background-image: none !important;
-  transform: none !important;
-  text-decoration: none;
-}
-
-.edition-public-table__row-hit {
+.edition-public-table__row-hit,
+.public-table__row-hit {
   position: absolute;
   inset: 0;
   z-index: 1;
 }
 
-.edition-public-table tbody tr.edition-public-table__row td {
+.data-table.public-table tbody tr.public-table__row td,
+.data-table.edition-public-table tbody tr.edition-public-table__row td,
+.data-table.edition-public-table tbody tr.public-table__row td {
   position: relative;
   z-index: 0;
+}
+
+.edition-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.edition-pager__meta {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.edition-pager__size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.edition-pager__size select {
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  padding: 0.15rem 0.25rem;
+  cursor: pointer;
 }
 
 .edition-sort-th {
@@ -2920,20 +3146,6 @@ input.sketch-check:focus-visible {
 
 .edition-sort-th:hover {
   color: var(--blue);
-}
-
-.edition-pager {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.85rem;
-}
-
-.edition-pager__meta {
-  margin: 0;
-  font-size: 0.95rem;
 }
 
 .table-scroll {
