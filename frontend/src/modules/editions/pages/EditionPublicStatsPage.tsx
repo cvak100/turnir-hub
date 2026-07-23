@@ -479,6 +479,16 @@ export function EditionPublicStatsPage() {
 
   const awardRows = normalizeList(awards.data);
 
+  const teamNameByPlayerId = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const p of players.data?.results ?? []) {
+      if (p.player?.id == null) continue;
+      const name = p.team_name ?? p.participation_name;
+      if (name) map.set(p.player.id, name);
+    }
+    return map;
+  }, [players.data]);
+
   function playerHref(p: TeamParticipationPlayerListItem): string | undefined {
     return p.player?.id != null ? `/players/${p.player.id}` : undefined;
   }
@@ -724,7 +734,13 @@ export function EditionPublicStatsPage() {
                     <strong>{a.award?.name}</strong>
                   </td>
                   <td>{a.player_name || "—"}</td>
-                  <td className="muted">{a.team_name || "—"}</td>
+                  <td className="muted">
+                    {a.team_name ||
+                      (a.player != null
+                        ? teamNameByPlayerId.get(a.player)
+                        : undefined) ||
+                      "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

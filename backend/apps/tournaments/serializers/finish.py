@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.players.models import Award, PlayerAward
+from apps.players.models import Award, PlayerAward, TeamParticipationPlayer
 from apps.tournaments.models import Sponsor, TournamentFinalStanding, TournamentPrize
 
 
@@ -78,6 +78,20 @@ class PlayerAwardSerializer(serializers.ModelSerializer):
 
     def get_team_name(self, obj):
         part = obj.team_participation
+        if part is None:
+            link = (
+                TeamParticipationPlayer.objects.select_related(
+                    "team_participation",
+                    "team_participation__team",
+                )
+                .filter(
+                    player_id=obj.player_id,
+                    team_participation__tournament_edition_id=obj.tournament_edition_id,
+                )
+                .order_by("-is_active", "id")
+                .first()
+            )
+            part = link.team_participation if link else None
         if part is None:
             return None
         return part.participation_name or (

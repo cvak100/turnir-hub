@@ -2815,6 +2815,13 @@ input.sketch-check:focus-visible {
   min-width: 8rem;
 }
 
+/* Team numeric headers/values (Prejeti, Tekme, ?) stay on one line */
+.edition-stat-grid--teams .edition-stat-table th:nth-child(n + 3),
+.edition-stat-grid--teams .edition-stat-table td:nth-child(n + 3) {
+  white-space: nowrap;
+  word-break: normal;
+}
+
 /* Player tables: player + team get more space */
 .edition-stat-grid--players .edition-stat-table th:nth-child(2),
 .edition-stat-grid--players .edition-stat-table td:nth-child(2),
@@ -2913,6 +2920,20 @@ input.sketch-check:focus-visible {
 
 .edition-sort-th:hover {
   color: var(--blue);
+}
+
+.edition-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.edition-pager__meta {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .table-scroll {

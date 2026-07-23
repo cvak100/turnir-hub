@@ -161,6 +161,7 @@ class PlayerAwardViewSet(viewsets.ModelViewSet):
             "player",
             "player__person",
             "team_participation",
+            "team_participation__team",
             "tournament_edition",
         ).all()
         return scope_public_or_accessible(

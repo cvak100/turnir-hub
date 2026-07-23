@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -9,6 +9,8 @@ import { useAsyncData } from "@/shared/hooks/useAsyncData";
 import type { TeamParticipationPlayerListItem } from "@/modules/players/services/playerService";
 import { publicApi } from "@/modules/public/services/publicApi";
 import { EditionPublicNav, personLabel } from "../publicEdition.tsx";
+
+const PAGE_SIZE = 20;
 
 type SortKey =
   | "name"
@@ -67,6 +69,7 @@ export function EditionPublicPlayersPage() {
   const navigate = useNavigate();
   const [sortKey, setSortKey] = useState<SortKey>("team");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [page, setPage] = useState(1);
 
   const edition = useAsyncData(
     () => publicApi.getEdition(editionId),
@@ -86,9 +89,10 @@ export function EditionPublicPlayersPage() {
         key === "name" || key === "team" || key === "position" ? "asc" : "desc",
       );
     }
+    setPage(1);
   }
 
-  const playerRows = useMemo(() => {
+  const sortedPlayers = useMemo(() => {
     const rows = [...(players.data?.results ?? [])];
     const mul = sortDir === "asc" ? 1 : -1;
     rows.sort((a, b) => {
@@ -133,6 +137,17 @@ export function EditionPublicPlayersPage() {
     return rows;
   }, [players.data, sortKey, sortDir]);
 
+  const totalPages = Math.max(1, Math.ceil(sortedPlayers.length / PAGE_SIZE));
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const playerRows = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return sortedPlayers.slice(start, start + PAGE_SIZE);
+  }, [sortedPlayers, page]);
+
   if (!Number.isFinite(editionId)) {
     return <StateMessage variant="error" message="Neveljaven id edicije." />;
   }
@@ -150,6 +165,9 @@ export function EditionPublicPlayersPage() {
       title={title}
     />
   );
+
+  const from = sortedPlayers.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, sortedPlayers.length);
 
   return (
     <div className="page">
@@ -170,76 +188,106 @@ export function EditionPublicPlayersPage() {
       {loading ? <StateMessage variant="loading" /> : null}
 
       <section className="border-frame border-frame--md">
-        {playerRows.length === 0 ? (
+        {sortedPlayers.length === 0 && !loading ? (
           <p className="muted">Ni igralcev.</p>
-        ) : (
-          <div className="table-scroll">
-            <table className="data-table edition-public-table">
-              <thead>
-                <tr>
-                  {th("Igralec", "name")}
-                  {th("Ekipa", "team")}
-                  {th("Dres", "jersey", "Številka dresa")}
-                  {th("Pozicija", "position")}
-                  {th("T", "matches", "Tekme")}
-                  {th("G", "goals", "Goli")}
-                  {th("A", "assists", "Asistence")}
-                  {th("🟨", "yellow", "Rumeni kartoni")}
-                  {th("🟥", "red", "Rdeči kartoni")}
-                </tr>
-              </thead>
-              <tbody>
-                {playerRows.map((p: TeamParticipationPlayerListItem) => {
-                  const playerId = p.player?.id;
-                  const href =
-                    playerId != null ? `/players/${playerId}` : undefined;
-                  return (
-                    <tr
-                      key={p.id}
-                      className={
-                        href ? "edition-public-table__row" : undefined
-                      }
-                      tabIndex={href ? 0 : undefined}
-                      role={href ? "link" : undefined}
-                      onClick={
-                        href
-                          ? () => {
-                              navigate(href);
-                            }
-                          : undefined
-                      }
-                      onKeyDown={
-                        href
-                          ? (e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
+        ) : sortedPlayers.length === 0 ? null : (
+          <>
+            <div className="table-scroll">
+              <table className="data-table edition-public-table">
+                <thead>
+                  <tr>
+                    {th("Igralec", "name")}
+                    {th("Ekipa", "team")}
+                    {th("Dres", "jersey", "Številka dresa")}
+                    {th("Pozicija", "position")}
+                    {th("T", "matches", "Tekme")}
+                    {th("G", "goals", "Goli")}
+                    {th("A", "assists", "Asistence")}
+                    {th("🟨", "yellow", "Rumeni kartoni")}
+                    {th("🟥", "red", "Rdeči kartoni")}
+                  </tr>
+                </thead>
+                <tbody>
+                  {playerRows.map((p: TeamParticipationPlayerListItem) => {
+                    const playerId = p.player?.id;
+                    const href =
+                      playerId != null ? `/players/${playerId}` : undefined;
+                    return (
+                      <tr
+                        key={p.id}
+                        className={
+                          href ? "edition-public-table__row" : undefined
+                        }
+                        tabIndex={href ? 0 : undefined}
+                        role={href ? "link" : undefined}
+                        onClick={
+                          href
+                            ? () => {
                                 navigate(href);
                               }
-                            }
-                          : undefined
-                      }
-                    >
-                      <td>
-                        <span className="edition-public-table__row-label">
-                          {personLabel(p)}
-                        </span>
-                      </td>
-                      <td className="muted">
-                        {p.team_name ?? p.participation_name ?? "—"}
-                      </td>
-                      <td>{p.jersey_number ?? "—"}</td>
-                      <td className="muted">{p.position || "—"}</td>
-                      <td>{p.matches_played ?? 0}</td>
-                      <td>{p.goals ?? 0}</td>
-                      <td>{p.assists ?? 0}</td>
-                      <td>{p.yellow_cards ?? 0}</td>
-                      <td>{p.red_cards ?? 0}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            : undefined
+                        }
+                        onKeyDown={
+                          href
+                            ? (e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  navigate(href);
+                                }
+                              }
+                            : undefined
+                        }
+                      >
+                        <td>
+                          <span className="edition-public-table__row-label">
+                            {personLabel(p)}
+                          </span>
+                        </td>
+                        <td className="muted">
+                          {p.team_name ?? p.participation_name ?? "—"}
+                        </td>
+                        <td>{p.jersey_number ?? "—"}</td>
+                        <td className="muted">{p.position || "—"}</td>
+                        <td>{p.matches_played ?? 0}</td>
+                        <td>{p.goals ?? 0}</td>
+                        <td>{p.assists ?? 0}</td>
+                        <td>{p.yellow_cards ?? 0}</td>
+                        <td>{p.red_cards ?? 0}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {sortedPlayers.length > PAGE_SIZE ? (
+              <div className="edition-pager">
+                <button
+                  type="button"
+                  className="button-link border-frame border-frame--sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Prejšnja
+                </button>
+                <span className="muted edition-pager__meta">
+                  {from}–{to} / {sortedPlayers.length} · stran {page}/
+                  {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="button-link border-frame border-frame--sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Naslednja
+                </button>
+              </div>
+            ) : (
+              <p className="muted edition-pager__meta">
+                {sortedPlayers.length} igralcev
+              </p>
+            )}
+          </>
         )}
       </section>
     </div>
