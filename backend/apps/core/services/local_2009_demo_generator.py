@@ -37,7 +37,7 @@ DAY = date(2009, 8, 22)
 
 # Demo rosters inspired by a 2009 local format (names anonymized)
 TEAM_ROSTERS: dict[str, list[str]] = {
-    "Ekipa Sever": [
+    "Ekipa Alfa": [
         "Nejc Kos",
         "Grega Krajnc",
         "Blaz Potocnik",
@@ -46,7 +46,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Tim Golob",
         "Denis Furlan",
     ],
-    "Ekipa Nadiža": [
+    "Ekipa Beta": [
         "Mark Golob",
         "Gal Kralj",
         "Miha Vidmar",
@@ -55,7 +55,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Nejc Zagar",
         "Ales Hribar",
     ],
-    "Ekipa Idrsko": [
+    "Ekipa Gama": [
         "David Oblak",
         "Niko Turk",
         "Tilen Hribar",
@@ -65,7 +65,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Jure Turk",
         "Tim Horvat",
     ],
-    "Ekipa Kotar": [
+    "Ekipa Delta": [
         "Gal Hribar",
         "Rok Zajc",
         "Erik Pavlic",
@@ -74,7 +74,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Vid Oblak",
         "David Kralj",
     ],
-    "Ekipa Kovi": [
+    "Ekipa Epsilon": [
         "Aljaz Lesjak",
         "Blaz Lesjak",
         "Tilen Vodopivec",
@@ -84,7 +84,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Niko Kos",
         "Zan Golob",
     ],
-    "Ekipa Medigo": [
+    "Ekipa Zeta": [
         "Sandi Zagar",
         "Nejc Zajc",
         "Sandi Hribar",
@@ -93,7 +93,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Simon Pavlic",
         "Lan Kos",
     ],
-    "Ekipa Mi": [
+    "Ekipa Eta": [
         "Luka Kotnik",
         "Primoz Lesjak",
         "Simon Horvat",
@@ -101,7 +101,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Niko Furlan",
         "Aljaz Potocnik",
     ],
-    "Ekipa Potoki": [
+    "Ekipa Theta": [
         "Primoz Pavlic",
         "Anze Rozman",
         "Primoz Kotnik",
@@ -112,7 +112,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Denis Bizjak",
         "Jan Sever",
     ],
-    "Ekipa Prosnid": [
+    "Ekipa Iota": [
         "Primoz Horvat",
         "Tim Rozman",
         "Simon Potocnik",
@@ -124,7 +124,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Aljaz Kralj",
         "Mark Novak",
     ],
-    "Ekipa Bar": [
+    "Ekipa Kappa": [
         "Mark Jereb",
         "Niko Kovac",
         "Grega Pavlic",
@@ -133,7 +133,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Luka Sever",
         "Luka Vidmar",
     ],
-    "Ekipa Selekcija": [
+    "Ekipa Lambda": [
         "Urban Vidmar",
         "Matic Zupancic",
         "Ales Vidmar",
@@ -142,7 +142,7 @@ TEAM_ROSTERS: dict[str, list[str]] = {
         "Luka Petek",
         "Mark Vodopivec",
     ],
-    "Ekipa Žaga": [
+    "Ekipa Mu": [
         "Gal Kovac",
         "David Erjavec",
         "Ales Erjavec",
@@ -159,10 +159,10 @@ PLAYER_ALIASES: dict[str, str] = {
 }
 
 GROUPS = {
-    "A": ["Ekipa Kovi", "Ekipa Sever", "Ekipa Potoki"],
-    "B": ["Ekipa Bar", "Ekipa Medigo", "Ekipa Nadiža"],
-    "C": ["Ekipa Kotar", "Ekipa Idrsko", "Ekipa Prosnid"],
-    "D": ["Ekipa Selekcija", "Ekipa Žaga", "Ekipa Mi"],
+    "A": ["Ekipa Epsilon", "Ekipa Alfa", "Ekipa Theta"],
+    "B": ["Ekipa Kappa", "Ekipa Zeta", "Ekipa Beta"],
+    "C": ["Ekipa Delta", "Ekipa Gama", "Ekipa Iota"],
+    "D": ["Ekipa Lambda", "Ekipa Mu", "Ekipa Eta"],
 }
 
 # Scorer entry: (full_name, count) — own goals marked separately
@@ -181,7 +181,7 @@ def _at(hour: int, minute: int) -> datetime:
     return datetime.combine(DAY, time(hour, minute), tzinfo=TZ)
 
 
-class Breginj2009Generator:
+class Local2009DemoGenerator:
     """
     Generator C — anonymized demo of a 2009-style local 4+1 tournament
     (12 teams, 4 groups). Real personal names are not included.
@@ -211,7 +211,7 @@ class Breginj2009Generator:
 
     @staticmethod
     def _lookup_player(players: dict[str, Player], name: str) -> Player | None:
-        resolved = Breginj2009Generator._resolve_name(name)
+        resolved = Local2009DemoGenerator._resolve_name(name)
         return players.get(resolved) or players.get(name)
 
     @staticmethod
@@ -244,7 +244,7 @@ class Breginj2009Generator:
     def _renumber_roster(*, part, roster: list[str]) -> None:
         from apps.players.models import TeamParticipationPlayer
 
-        pmap = Breginj2009Generator._player_map(part)
+        pmap = Local2009DemoGenerator._player_map(part)
         # Clear first to avoid unique collisions while swapping
         TeamParticipationPlayer.objects.filter(team_participation=part).update(
             jersey_number=None
@@ -261,10 +261,10 @@ class Breginj2009Generator:
     @staticmethod
     def _sync_roster(*, part, roster: list[str], player_role) -> dict[str, Player]:
         """Ensure participation has all roster names (does not remove extras)."""
-        current = Breginj2009Generator._player_map(part)
+        current = Local2009DemoGenerator._player_map(part)
         for full in roster:
             if full not in current:
-                current[full] = Breginj2009Generator._add_player_to_roster(
+                current[full] = Local2009DemoGenerator._add_player_to_roster(
                     part=part,
                     full_name=full,
                     jersey=None,
@@ -290,7 +290,7 @@ class Breginj2009Generator:
         created = 0
         minute = start_minute
         for name, count in scorers:
-            player = Breginj2009Generator._lookup_player(players, name)
+            player = Local2009DemoGenerator._lookup_player(players, name)
             if player is None:
                 raise ValidationError(
                     {"players": f"Manjka igralec '{name}' na rosterju ({team})."}
@@ -316,7 +316,7 @@ class Breginj2009Generator:
 
         for name, count in own_goals or []:
             # Own goal: scorer is on opposing team; credit goes to `team`.
-            og_player = Breginj2009Generator._lookup_player(
+            og_player = Local2009DemoGenerator._lookup_player(
                 opposing_players or {}, name
             )
             if og_player is None or opposing_team is None:
@@ -356,14 +356,14 @@ class Breginj2009Generator:
         from apps.tournaments.models import TournamentEdition
         from apps.users.models import Person
 
-        player_role = Breginj2009Generator._require(
+        player_role = Local2009DemoGenerator._require(
             PersonRoleType.objects.filter(code="player").first(),
             "vloga player",
         )
 
         editions = list(
             TournamentEdition.objects.filter(
-                name__in=["Demo lokalni 2009", "Breginj 2009"]
+                name__in=["Demo lokalni 2009", "Local 2009 demo"]
             ).order_by("id")
         )
         report = {"editions": [], "count": len(editions)}
@@ -390,8 +390,8 @@ class Breginj2009Generator:
                     raise ValidationError(
                         {"teams": f"Edition {edition.id}: manjka ekipa {team_name}"}
                     )
-                before = set(Breginj2009Generator._player_map(part))
-                synced[team_name] = Breginj2009Generator._sync_roster(
+                before = set(Local2009DemoGenerator._player_map(part))
+                synced[team_name] = Local2009DemoGenerator._sync_roster(
                     part=part, roster=roster, player_role=player_role
                 )
                 after = set(synced[team_name])
@@ -410,8 +410,8 @@ class Breginj2009Generator:
             for event in events:
                 person = event.player.person
                 old_name = f"{person.first_name} {person.last_name}".strip()
-                resolved = Breginj2009Generator._resolve_name(old_name)
-                pmap = Breginj2009Generator._player_map(event.team_participation)
+                resolved = Local2009DemoGenerator._resolve_name(old_name)
+                pmap = Local2009DemoGenerator._player_map(event.team_participation)
                 new_player = pmap.get(resolved)
                 if new_player is None:
                     # Try alias reverse / keep if already correct roster name
@@ -435,11 +435,11 @@ class Breginj2009Generator:
             ).select_related("player__person", "team_participation"):
                 person = award.player.person
                 old_name = f"{person.first_name} {person.last_name}".strip()
-                resolved = Breginj2009Generator._resolve_name(old_name)
+                resolved = Local2009DemoGenerator._resolve_name(old_name)
                 part = award.team_participation
                 if part is None:
                     continue
-                pmap = Breginj2009Generator._player_map(part)
+                pmap = Local2009DemoGenerator._player_map(part)
                 new_player = pmap.get(resolved)
                 if new_player and new_player.id != award.player_id:
                     award.player = new_player
@@ -451,7 +451,7 @@ class Breginj2009Generator:
             for team_name, roster in TEAM_ROSTERS.items():
                 part = parts_by_name[team_name]
                 desired = set(roster)
-                current = Breginj2009Generator._player_map(part)
+                current = Local2009DemoGenerator._player_map(part)
                 for name, player in current.items():
                     if name in desired:
                         continue
@@ -478,7 +478,7 @@ class Breginj2009Generator:
 
             # 5) Renumber jerseys 1..n per historical roster order
             for team_name, roster in TEAM_ROSTERS.items():
-                Breginj2009Generator._renumber_roster(
+                Local2009DemoGenerator._renumber_roster(
                     part=parts_by_name[team_name],
                     roster=roster,
                 )
@@ -503,7 +503,7 @@ class Breginj2009Generator:
             # Final check: roster sizes
             for team_name, roster in TEAM_ROSTERS.items():
                 part = parts_by_name[team_name]
-                got = sorted(Breginj2009Generator._player_map(part))
+                got = sorted(Local2009DemoGenerator._player_map(part))
                 want = sorted(roster)
                 if got != want:
                     raise ValidationError(
@@ -535,12 +535,12 @@ class Breginj2009Generator:
     ) -> dict:
         home = match.home_team_participation
         away = match.away_team_participation
-        home_players = Breginj2009Generator._player_map(home)
-        away_players = Breginj2009Generator._player_map(away)
+        home_players = Local2009DemoGenerator._player_map(home)
+        away_players = Local2009DemoGenerator._player_map(away)
 
         MatchEventService.start_match(match=match)
         events = 0
-        events += Breginj2009Generator._add_goals(
+        events += Local2009DemoGenerator._add_goals(
             match=match,
             team=home,
             scorers=home_scorers,
@@ -553,7 +553,7 @@ class Breginj2009Generator:
             opposing_players=away_players,
             opposing_team=away,
         )
-        events += Breginj2009Generator._add_goals(
+        events += Local2009DemoGenerator._add_goals(
             match=match,
             team=away,
             scorers=away_scorers,
@@ -634,30 +634,30 @@ class Breginj2009Generator:
             sport = Sport.objects.create(name="Nogomet", is_active=True)
         steps.append({"step": "sport", "message": f"Šport: {sport.name}"})
 
-        fmt = Breginj2009Generator._require(
+        fmt = Local2009DemoGenerator._require(
             TournamentFormat.objects.filter(code="group_knockout").first(),
             "format 'group_knockout'",
         )
-        category = Breginj2009Generator._require(
+        category = Local2009DemoGenerator._require(
             TournamentCategory.objects.filter(slug="malonogometni").first()
             or TournamentCategory.objects.filter(name__icontains="Malonogomet").first()
             or TournamentCategory.objects.filter(slug="futsal").first(),
             "kategorija Malonogometni/Futsal",
         )
-        rules = Breginj2009Generator._require(
+        rules = Local2009DemoGenerator._require(
             GlobalRuleTemplate.objects.filter(name__icontains="4+1").first()
             or GlobalRuleTemplate.objects.filter(name__icontains="Futsal").first(),
             "pravila 4+1 Futsal",
         )
-        status_ongoing = Breginj2009Generator._require(
+        status_ongoing = Local2009DemoGenerator._require(
             TournamentStatus.objects.filter(code="ongoing").first(),
             "status ongoing",
         )
-        player_role = Breginj2009Generator._require(
+        player_role = Local2009DemoGenerator._require(
             PersonRoleType.objects.filter(code="player").first(),
             "vloga player",
         )
-        goal_type = Breginj2009Generator._require(
+        goal_type = Local2009DemoGenerator._require(
             EventType.objects.filter(code="goal", is_active=True).first(),
             "event type goal",
         )
@@ -736,7 +736,7 @@ class Breginj2009Generator:
             )
             parts[team_name] = part
             for i, full in enumerate(roster, start=1):
-                Breginj2009Generator._add_player_to_roster(
+                Local2009DemoGenerator._add_player_to_roster(
                     part=part,
                     full_name=full,
                     jersey=i,
@@ -834,27 +834,27 @@ class Breginj2009Generator:
         # Group matches
         group_specs = [
             # A
-            ("A", "Ekipa Sever", "Ekipa Potoki", 10, 0, [("Blaz Potocnik", 5), ("Primoz Zagar", 1), ("Matic Vidmar", 1)], [("Gal Oblak", 2)], None, ""),
-            ("A", "Ekipa Kovi", "Ekipa Potoki", 11, 0, [("Niko Kos", 4), ("Zan Golob", 2), ("Tim Kovac", 1), ("Denis Vidmar", 1), ("Erik Golob", 1)], [], None, ""),
-            ("A", "Ekipa Kovi", "Ekipa Sever", 12, 30, [("Aljaz Lesjak", 1), ("Denis Vidmar", 1), ("Zan Golob", 1)], [("Blaz Potocnik", 1)], None, ""),
+            ("A", "Ekipa Alfa", "Ekipa Theta", 10, 0, [("Blaz Potocnik", 5), ("Primoz Zagar", 1), ("Matic Vidmar", 1)], [("Gal Oblak", 2)], None, ""),
+            ("A", "Ekipa Epsilon", "Ekipa Theta", 11, 0, [("Niko Kos", 4), ("Zan Golob", 2), ("Tim Kovac", 1), ("Denis Vidmar", 1), ("Erik Golob", 1)], [], None, ""),
+            ("A", "Ekipa Epsilon", "Ekipa Alfa", 12, 30, [("Aljaz Lesjak", 1), ("Denis Vidmar", 1), ("Zan Golob", 1)], [("Blaz Potocnik", 1)], None, ""),
             # B
-            ("B", "Ekipa Nadiža", "Ekipa Medigo", 10, 30, [("Gal Kralj", 1)], [("Sandi Zagar", 1), ("Nejc Zajc", 1), ("Sandi Hribar", 1)], None, ""),
-            ("B", "Ekipa Bar", "Ekipa Nadiža", 11, 30, [("Luka Vidmar", 1)], [], None, ""),
-            ("B", "Ekipa Bar", "Ekipa Medigo", 13, 0, [("Mark Jereb", 2), ("Lan Hribar", 2), ("Grega Pavlic", 1)], [("Nejc Zajc", 2)], None, ""),
+            ("B", "Ekipa Beta", "Ekipa Zeta", 10, 30, [("Gal Kralj", 1)], [("Sandi Zagar", 1), ("Nejc Zajc", 1), ("Sandi Hribar", 1)], None, ""),
+            ("B", "Ekipa Kappa", "Ekipa Beta", 11, 30, [("Luka Vidmar", 1)], [], None, ""),
+            ("B", "Ekipa Kappa", "Ekipa Zeta", 13, 0, [("Mark Jereb", 2), ("Lan Hribar", 2), ("Grega Pavlic", 1)], [("Nejc Zajc", 2)], None, ""),
             # C
-            ("C", "Ekipa Kotar", "Ekipa Prosnid", 12, 0, [("Gal Hribar", 1), ("Rok Zajc", 1)], [], None, ""),
-            ("C", "Ekipa Idrsko", "Ekipa Prosnid", 14, 0, [("Niko Turk", 2), ("Erik Horvat", 2), ("Jure Turk", 2), ("David Oblak", 1)], [("Mark Novak", 2)], None, ""),
-            ("C", "Ekipa Kotar", "Ekipa Idrsko", 15, 0, [], [("Jure Turk", 1)], None, "Tekma predčasno končana zaradi poškodbe."),
+            ("C", "Ekipa Delta", "Ekipa Iota", 12, 0, [("Gal Hribar", 1), ("Rok Zajc", 1)], [], None, ""),
+            ("C", "Ekipa Gama", "Ekipa Iota", 14, 0, [("Niko Turk", 2), ("Erik Horvat", 2), ("Jure Turk", 2), ("David Oblak", 1)], [("Mark Novak", 2)], None, ""),
+            ("C", "Ekipa Delta", "Ekipa Gama", 15, 0, [], [("Jure Turk", 1)], None, "Tekma predčasno končana zaradi poškodbe."),
             # D
-            ("D", "Ekipa Selekcija", "Ekipa Mi", 13, 30, [("Luka Petek", 1)], [], None, ""),
-            ("D", "Ekipa Žaga", "Ekipa Mi", 14, 30, [("Gal Kovac", 3), ("David Erjavec", 2), ("Bor Pavlic", 1)], [], None, ""),
-            ("D", "Ekipa Selekcija", "Ekipa Žaga", 15, 30, [], [], (3, 2), "Odločitev po penalih (strelci penalov niso navedeni)."),
+            ("D", "Ekipa Lambda", "Ekipa Eta", 13, 30, [("Luka Petek", 1)], [], None, ""),
+            ("D", "Ekipa Mu", "Ekipa Eta", 14, 30, [("Gal Kovac", 3), ("David Erjavec", 2), ("Bor Pavlic", 1)], [], None, ""),
+            ("D", "Ekipa Lambda", "Ekipa Mu", 15, 30, [], [], (3, 2), "Odločitev po penalih (strelci penalov niso navedeni)."),
         ]
 
         results = []
         n = 1
         for letter, home_n, away_n, hh, mm, hs, aws, pens, notes in group_specs:
-            m = Breginj2009Generator._make_match(
+            m = Local2009DemoGenerator._make_match(
                 phase=group_phase,
                 group=group_objs[letter],
                 home=parts[home_n],
@@ -864,7 +864,7 @@ class Breginj2009Generator:
             )
             n += 1
             results.append(
-                Breginj2009Generator._play_match(
+                Local2009DemoGenerator._play_match(
                     match=m,
                     home_scorers=hs,
                     away_scorers=aws,
@@ -886,17 +886,17 @@ class Breginj2009Generator:
         # Knockout
         knockout_specs = [
             # QF
-            (qf_phase, "Ekipa Kovi", "Ekipa Medigo", 16, 0, [("Blaz Lesjak", 1), ("Denis Vidmar", 1)], [("Nejc Bizjak", 2), ("Nejc Zajc", 1)], None, None, None, ""),
-            (qf_phase, "Ekipa Sever", "Ekipa Bar", 16, 30, [("Blaz Potocnik", 2)], [("Simon Zajc", 2), ("Lan Hribar", 1), ("Luka Vidmar", 1)], None, None, None, ""),
-            (qf_phase, "Ekipa Idrsko", "Ekipa Žaga", 17, 0, [], [("Gal Kovac", 3), ("Anze Kolar", 1)], [("David Erjavec", 1)], None, None, ""),
-            (qf_phase, "Ekipa Kotar", "Ekipa Selekcija", 17, 30, [("Rok Zajc", 1)], [("Mark Vodopivec", 1)], None, None, (2, 1), ""),
+            (qf_phase, "Ekipa Epsilon", "Ekipa Zeta", 16, 0, [("Blaz Lesjak", 1), ("Denis Vidmar", 1)], [("Nejc Bizjak", 2), ("Nejc Zajc", 1)], None, None, None, ""),
+            (qf_phase, "Ekipa Alfa", "Ekipa Kappa", 16, 30, [("Blaz Potocnik", 2)], [("Simon Zajc", 2), ("Lan Hribar", 1), ("Luka Vidmar", 1)], None, None, None, ""),
+            (qf_phase, "Ekipa Gama", "Ekipa Mu", 17, 0, [], [("Gal Kovac", 3), ("Anze Kolar", 1)], [("David Erjavec", 1)], None, None, ""),
+            (qf_phase, "Ekipa Delta", "Ekipa Lambda", 17, 30, [("Rok Zajc", 1)], [("Mark Vodopivec", 1)], None, None, (2, 1), ""),
             # SF
-            (sf_phase, "Ekipa Žaga", "Ekipa Medigo", 18, 0, [], [("Nejc Zajc", 2), ("Nejc Bizjak", 1), ("Nejc Golob", 1), ("Lan Kos", 1)], None, None, None, ""),
-            (sf_phase, "Ekipa Kotar", "Ekipa Bar", 18, 30, [("Rok Zajc", 1), ("Erik Pavlic", 1)], [("Mark Jereb", 1), ("Simon Zajc", 1)], None, None, (2, 1), ""),
+            (sf_phase, "Ekipa Mu", "Ekipa Zeta", 18, 0, [], [("Nejc Zajc", 2), ("Nejc Bizjak", 1), ("Nejc Golob", 1), ("Lan Kos", 1)], None, None, None, ""),
+            (sf_phase, "Ekipa Delta", "Ekipa Kappa", 18, 30, [("Rok Zajc", 1), ("Erik Pavlic", 1)], [("Mark Jereb", 1), ("Simon Zajc", 1)], None, None, (2, 1), ""),
             # 3rd
-            (third_phase, "Ekipa Bar", "Ekipa Žaga", 19, 0, [], [], None, None, (5, 6), "Odločitev po penalih (strelci niso navedeni)."),
+            (third_phase, "Ekipa Kappa", "Ekipa Mu", 19, 0, [], [], None, None, (5, 6), "Odločitev po penalih (strelci niso navedeni)."),
             # Final
-            (final_phase, "Ekipa Kotar", "Ekipa Medigo", 19, 30, [("Rok Zajc", 2), ("Gal Hribar", 1), ("Erik Pavlic", 1), ("Vid Oblak", 1)], [("Simon Pavlic", 1)], None, None, None, ""),
+            (final_phase, "Ekipa Delta", "Ekipa Zeta", 19, 30, [("Rok Zajc", 2), ("Gal Hribar", 1), ("Erik Pavlic", 1), ("Vid Oblak", 1)], [("Simon Pavlic", 1)], None, None, None, ""),
         ]
 
         ko_results = []
@@ -913,7 +913,7 @@ class Breginj2009Generator:
             pens,
             notes,
         ) in knockout_specs:
-            m = Breginj2009Generator._make_match(
+            m = Local2009DemoGenerator._make_match(
                 phase=phase,
                 group=None,
                 home=parts[home_n],
@@ -922,9 +922,9 @@ class Breginj2009Generator:
                 match_number=n,
             )
             n += 1
-            # For Ekipa Idrsko own goal: home_own_goals means goals credited to home via OG by away player
+            # For Ekipa Gama own goal: home_own_goals means goals credited to home via OG by away player
             ko_results.append(
-                Breginj2009Generator._play_match(
+                Local2009DemoGenerator._play_match(
                     match=m,
                     home_scorers=hs,
                     away_scorers=aws,
@@ -953,8 +953,8 @@ class Breginj2009Generator:
             )
 
         def pid(team_name: str, player_name: str) -> int:
-            pmap = Breginj2009Generator._player_map(parts[team_name])
-            pl = Breginj2009Generator._lookup_player(pmap, player_name)
+            pmap = Local2009DemoGenerator._player_map(parts[team_name])
+            pl = Local2009DemoGenerator._lookup_player(pmap, player_name)
             if pl is None:
                 raise ValidationError({"awards": f"Ni igralca {player_name}"})
             return pl.id
@@ -962,22 +962,22 @@ class Breginj2009Generator:
         standings = [
             {
                 "position": 1,
-                "team_participation_id": parts["Ekipa Kotar"].id,
+                "team_participation_id": parts["Ekipa Delta"].id,
                 "qualification": "1. mesto — pokal + bon paintball",
             },
             {
                 "position": 2,
-                "team_participation_id": parts["Ekipa Medigo"].id,
+                "team_participation_id": parts["Ekipa Zeta"].id,
                 "qualification": "2. mesto — pokal + bon pice",
             },
             {
                 "position": 3,
-                "team_participation_id": parts["Ekipa Žaga"].id,
+                "team_participation_id": parts["Ekipa Mu"].id,
                 "qualification": "3. mesto — pokal + plato piva",
             },
             {
                 "position": 4,
-                "team_participation_id": parts["Ekipa Bar"].id,
+                "team_participation_id": parts["Ekipa Kappa"].id,
                 "qualification": "4. mesto — pokal + plato piva",
             },
         ]
@@ -985,26 +985,26 @@ class Breginj2009Generator:
         player_awards = [
             {
                 "award_id": top_scorer.id,
-                "player_id": pid("Ekipa Sever", "Blaz Potocnik"),
-                "team_participation_id": parts["Ekipa Sever"].id,
+                "player_id": pid("Ekipa Alfa", "Blaz Potocnik"),
+                "team_participation_id": parts["Ekipa Alfa"].id,
                 "notes": "1. mesto strelci — 8 golov",
             },
             {
                 "award_id": top_scorer.id,
-                "player_id": pid("Ekipa Medigo", "Nejc Zajc"),
-                "team_participation_id": parts["Ekipa Medigo"].id,
+                "player_id": pid("Ekipa Zeta", "Nejc Zajc"),
+                "team_participation_id": parts["Ekipa Zeta"].id,
                 "notes": "2. mesto strelci — 6 golov",
             },
             {
                 "award_id": top_scorer.id,
-                "player_id": pid("Ekipa Žaga", "Gal Kovac"),
-                "team_participation_id": parts["Ekipa Žaga"].id,
+                "player_id": pid("Ekipa Mu", "Gal Kovac"),
+                "team_participation_id": parts["Ekipa Mu"].id,
                 "notes": "2. mesto strelci — 6 golov",
             },
             {
                 "award_id": top_scorer.id,
-                "player_id": pid("Ekipa Kotar", "Rok Zajc"),
-                "team_participation_id": parts["Ekipa Kotar"].id,
+                "player_id": pid("Ekipa Delta", "Rok Zajc"),
+                "team_participation_id": parts["Ekipa Delta"].id,
                 "notes": "4. mesto strelci — 5 golov",
             },
         ]
@@ -1017,25 +1017,25 @@ class Breginj2009Generator:
                 {
                     "prize_type": "trophy",
                     "recipient_type": "team",
-                    "team_participation_id": parts["Ekipa Kotar"].id,
+                    "team_participation_id": parts["Ekipa Delta"].id,
                     "description": "1. mesto — pokal + bon za paintball",
                 },
                 {
                     "prize_type": "trophy",
                     "recipient_type": "team",
-                    "team_participation_id": parts["Ekipa Medigo"].id,
+                    "team_participation_id": parts["Ekipa Zeta"].id,
                     "description": "2. mesto — pokal + bon za pice",
                 },
                 {
                     "prize_type": "trophy",
                     "recipient_type": "team",
-                    "team_participation_id": parts["Ekipa Žaga"].id,
+                    "team_participation_id": parts["Ekipa Mu"].id,
                     "description": "3. mesto — pokal + plato piva",
                 },
                 {
                     "prize_type": "trophy",
                     "recipient_type": "team",
-                    "team_participation_id": parts["Ekipa Bar"].id,
+                    "team_participation_id": parts["Ekipa Kappa"].id,
                     "description": "4. mesto — pokal + plato piva",
                 },
             ],
@@ -1044,7 +1044,7 @@ class Breginj2009Generator:
         steps.append(
             {
                 "step": "finish",
-                "message": "Edicija zaključena · 1. Ekipa Kotar · 2. Ekipa Medigo · 3. Ekipa Žaga",
+                "message": "Edicija zaključena · 1. Ekipa Delta · 2. Ekipa Zeta · 3. Ekipa Mu",
             }
         )
 
@@ -1064,7 +1064,7 @@ class Breginj2009Generator:
             "edition_id": edition.id,
             "tournament_name": tournament.name,
             "edition_name": edition.name,
-            "champion": "Ekipa Kotar",
+            "champion": "Ekipa Delta",
             "final_score": final_score,
             "location": "Demo lokacija",
             "date": "2009-08-22",

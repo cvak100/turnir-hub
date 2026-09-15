@@ -49,5 +49,4 @@ tools/pgsql-extract/
 tools/_*.py
 
 # Local scratch / duplicates
-READMEMAIN copy.md
 *.asar

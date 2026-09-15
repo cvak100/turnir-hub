@@ -2,7 +2,7 @@
 
 **Status: work in progress (active development)**
 
-Tournament management platform for organizing multi-edition competitions: public browsing, live match updates, admin tooling, and role-based access.
+Tournament management platform for organizing multi-edition competitions: public browsing, live match updates, admin tooling, and permissions.
 
 This repo is a personal project / portfolio piece. Expect incomplete polish, evolving APIs, and occasional breaking changes.
 
@@ -14,8 +14,6 @@ This repo is a personal project / portfolio piece. Expect incomplete polish, evo
 | Frontend | React 19, TypeScript, Vite, React Router |
 | Infra (local) | Docker Compose for Postgres |
 
-> Note: older planning docs may still mention Next.js — the current frontend is **Vite + React**.
-
 ## Monorepo layout
 
 ```text
@@ -24,7 +22,7 @@ turnir-hub/
 ├── frontend/             # Vite React SPA
 ├── docker-compose.yml    # PostgreSQL
 ├── start-dev.bat         # Windows helper (optional)
-└── READMEMAIN*.md        # Historical development plans (not setup guides)
+└── start-dev.ps1         # PowerShell helper (optional)
 ```
 
 ## Features (current)
@@ -38,7 +36,7 @@ turnir-hub/
 **Auth & permissions**
 - JWT login (access + refresh)
 - User ↔ Person link for account identity
-- Role / permission checks on manage and admin routes (RBAC still evolving)
+- Permission model + admin role UI (RBAC); route-level guards are partial — backend permission checks are the source of truth
 
 **Admin / manage**
 - Catalog (sports, statuses, rule templates, formats, …)
@@ -46,7 +44,7 @@ turnir-hub/
 - Match detail / event editing
 - Live match control (clock, events, temporary players)
 - Edition preparation: teams, players, phases, finish flow + awards
-- Demo generators for sandbox data (fictional / anonymized names)
+- Demo generators for sandbox data (fictional names only)
 
 ## Prerequisites
 
@@ -83,28 +81,28 @@ copy .env.example .env          # Windows
 python manage.py migrate
 python manage.py seed_all       # statuses, roles, formats, …
 python manage.py createsuperuser
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 127.0.0.1:8000
 ```
 
 API: [http://localhost:8000](http://localhost:8000)  
-OpenAPI (if enabled): `/api/schema/swagger-ui/`
+OpenAPI docs: [http://localhost:8000/api/v1/docs/](http://localhost:8000/api/v1/docs/)
 
 ### 3. Frontend
 
 ```bash
 cd frontend
 npm install
-copy .env.example .env          # optional; proxy defaults are fine
+copy .env.example .env          # optional; Vite proxy defaults are fine
 npm run dev
 ```
 
 App: [http://localhost:3000](http://localhost:3000)
 
-Vite proxies `/api` and `/ws` to the backend. If you run Django on another port (e.g. via `start-dev.bat`), adjust `frontend/vite.config.ts` accordingly.
+Vite proxies `/api` and `/ws` to `http://127.0.0.1:8000` (see `frontend/vite.config.ts`).
 
-### Windows one-click (optional)
+### Windows helpers (optional)
 
-`start-dev.bat` starts Postgres (Docker or a local portable install), Django, and Vite. Prefer Docker for a clean, portable setup.
+`start-dev.bat` or `start-dev.ps1` start Docker Postgres (if available), Django on `:8000`, and Vite on `:3000`.
 
 ## Project conventions
 
@@ -118,7 +116,7 @@ Vite proxies `/api` and `/ws` to the backend. If you run Django on another port 
 
 - Copy only `.env.example` files; real `.env` files are gitignored
 - Never commit secrets, dumps, media uploads, or local DB data
-- Demo generators use **fictional / anonymized** person names — do not add real personal data to the repo
+- Demo generators use **fictional** person names — do not add real personal data to the repo
 
 ## Docs
 
@@ -127,11 +125,10 @@ Vite proxies `/api` and `/ws` to the backend. If you run Django on another port 
 | `README.md` | This file — current overview & setup |
 | `backend/README.md` | Backend notes |
 | `frontend/README.md` | Frontend notes |
-| `READMEMAIN.md` / `READMEMAIN_FULL.md` | Early phase plans (partially outdated) |
 
 ## Roadmap / still in progress
 
-- [ ] Harden and document RBAC end-to-end
+- [ ] Complete route-level permission guards to match backend RBAC
 - [ ] Production deploy config & CI polish
 - [ ] Broader test coverage
 - [ ] UX consistency pass across admin / public surfaces
@@ -139,4 +136,4 @@ Vite proxies `/api` and `/ws` to the backend. If you run Django on another port 
 
 ## License
 
-Private / personal project unless otherwise stated. Ask before reusing substantial parts.
+Personal portfolio project. No license granted for reuse unless explicitly stated.

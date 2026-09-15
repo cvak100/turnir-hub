@@ -65,4 +65,4 @@ Start-Process cmd -ArgumentList "/k", "cd /d `"$Root\frontend`" && $frontendPath
 
 Write-Host ""
 Write-Host "Opened two windows. Close them to stop the servers."
-Write-Host "Login (dev): admin / admin"
+

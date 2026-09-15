@@ -15,15 +15,14 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
-    host: "0.0.0.0",
+    host: "localhost",
     proxy: {
-      // Vse naprave (LAN/internet) kličejo samo :3000; Vite forwarda na Django
       "/api": {
-        target: "http://127.0.0.1:61106",
+        target: "http://127.0.0.1:8000",
         changeOrigin: true,
       },
       "/ws": {
-        target: "ws://127.0.0.1:61106",
+        target: "ws://127.0.0.1:8000",
         ws: true,
         changeOrigin: true,
       },

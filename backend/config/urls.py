@@ -10,9 +10,9 @@ from rest_framework_simplejwt.views import (
 )
 
 from apps.core.views.generator import (
-    Breginj2009GeneratorView,
     DemoTournamentGeneratorView,
     GroupKnockoutGeneratorView,
+    Local2009DemoGeneratorView,
     PlayerHistoryGeneratorView,
 )
 from apps.core.views.health import HealthView
@@ -43,9 +43,9 @@ urlpatterns = [
         name="admin-generator-player-history",
     ),
     path(
-        "api/v1/admin/generator/breginj-2009/",
-        Breginj2009GeneratorView.as_view(),
-        name="admin-generator-breginj-2009",
+        "api/v1/admin/generator/local-2009-demo/",
+        Local2009DemoGeneratorView.as_view(),
+        name="admin-generator-local-2009-demo",
     ),
     path("api/v1/", include("apps.tournaments.urls")),
     path("api/v1/", include("apps.players.urls")),

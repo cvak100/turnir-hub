@@ -294,7 +294,7 @@ export function GeneratorAdminPage() {
     setResultC(null);
     try {
       const data = await api.post<GeneratorCResult>(
-        "/admin/generator/breginj-2009/",
+        "/admin/generator/local-2009-demo/",
         {},
       );
       setResultC(data);
