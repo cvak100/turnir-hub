@@ -89,6 +89,7 @@ class PermissionService:
             roles_payload.append(
                 {
                     "role": user_role.role.slug,
+                    "role_name": user_role.role.name,
                     "tournament_edition_id": user_role.tournament_edition_id,
                     "permissions": permissions,
                 }
@@ -105,11 +106,20 @@ class PermissionService:
                 "email": person.email,
             }
 
+        email = (getattr(user, "email", None) or "").strip()
+        if not email and person is not None:
+            email = (person.email or "").strip()
+
         return {
             "user": {
                 "id": user.id,
                 "username": user.username,
+                "email": email,
+                "date_joined": (
+                    user.date_joined.isoformat() if user.date_joined else None
+                ),
                 "is_superuser": user.is_superuser,
+                "is_staff": bool(getattr(user, "is_staff", False)),
                 "roles": roles_payload,
                 "person": person_payload,
             }

@@ -11,6 +11,7 @@ import {
   publicApi,
 } from "@/modules/public/services/publicApi";
 import { EditionPublicNav, matchLabel } from "../publicEdition.tsx";
+import { EditionManageNav } from "../EditionManageNav";
 
 export function EditionDetailPage() {
   const { id } = useParams();
@@ -60,6 +61,7 @@ export function EditionDetailPage() {
         }
       />
       <EditionPublicNav editionId={editionId} />
+      <EditionManageNav editionId={editionId} />
       <ErrorBanner error={error} />
       {loading ? <StateMessage variant="loading" /> : null}
 

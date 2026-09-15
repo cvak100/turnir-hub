@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.services.breginj_2009_generator import Breginj2009Generator
 from apps.core.services.demo_generator import DemoTournamentGenerator
 from apps.core.services.group_knockout_generator import GroupKnockoutGenerator
 from apps.core.services.player_history_generator import PlayerHistoryGenerator
@@ -87,4 +88,15 @@ class PlayerHistoryGeneratorView(APIView):
             years=years_int,
             seed=seed_int,
         )
+        return Response(result, status=status.HTTP_201_CREATED)
+
+
+class Breginj2009GeneratorView(APIView):
+    """Admin-only: Generator C — historical Breginj 2009 tournament."""
+
+    permission_classes = [HasPermission]
+    required_permission = "admin.full_access"
+
+    def post(self, request):
+        result = Breginj2009Generator.run(user=request.user)
         return Response(result, status=status.HTTP_201_CREATED)

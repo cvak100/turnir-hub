@@ -5,6 +5,12 @@ from apps.users.views.person import PersonViewSet
 from apps.users.views.person_role_type import PersonRoleTypeViewSet
 from apps.users.views.person_status import PersonStatusViewSet
 from apps.users.views.player_status import PlayerStatusViewSet
+from apps.users.views.rbac import (
+    AuthUserViewSet,
+    PermissionViewSet,
+    RoleViewSet,
+    UserRoleViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"persons", PersonViewSet, basename="person")
@@ -24,5 +30,9 @@ router.register(
     PlayerStatusViewSet,
     basename="player-status",
 )
+router.register(r"permissions", PermissionViewSet, basename="permission")
+router.register(r"roles", RoleViewSet, basename="role")
+router.register(r"user-roles", UserRoleViewSet, basename="user-role")
+router.register(r"auth-users", AuthUserViewSet, basename="auth-user")
 
 urlpatterns = router.urls

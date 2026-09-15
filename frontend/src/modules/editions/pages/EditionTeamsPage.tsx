@@ -17,6 +17,7 @@ import {
 } from "@/shared/components";
 import { useAsyncData } from "@/shared/hooks/useAsyncData";
 import { useAuth } from "@/shared/auth";
+import { EditionManageNav } from "../EditionManageNav";
 import { personService } from "@/modules/admin/services/personService";
 import { editionService } from "@/modules/editions/services/editionService";
 import {
@@ -211,6 +212,8 @@ export function EditionTeamsPage() {
           )
         }
       />
+
+      <EditionManageNav editionId={editionId} />
 
       {mode === "list" && canRegister ? (
         <div className="page-primary-actions">

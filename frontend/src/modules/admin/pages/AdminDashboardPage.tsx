@@ -1,7 +1,15 @@
 ﻿import { Link } from "react-router-dom";
 import { PageHeader } from "@/shared/components";
 
-const ADMIN_MODULES = [
+type AdminModule = {
+  id: string;
+  label: string;
+  description: string;
+  path: string;
+  children?: { id: string; label: string; description: string; path: string }[];
+};
+
+const ADMIN_MODULES: AdminModule[] = [
   {
     id: "persons",
     label: "Persons",
@@ -25,6 +33,14 @@ const ADMIN_MODULES = [
     label: "Matches",
     description: "Seznam tekem, masovni statusi, urejanje in brisanje.",
     path: "/dashboard_admin/matches",
+    children: [
+      {
+        id: "live-edit",
+        label: "Live Edit",
+        description: "Live tekme — klik odpre live urejanje.",
+        path: "/dashboard_admin/live",
+      },
+    ],
   },
   {
     id: "catalog",
@@ -33,12 +49,18 @@ const ADMIN_MODULES = [
     path: "/dashboard_admin/catalog",
   },
   {
+    id: "roles",
+    label: "Urejanje pravic / vlog",
+    description: "Dodeljevanje vlog uporabnikom in urejanje pravic.",
+    path: "/dashboard_admin/roles",
+  },
+  {
     id: "generator",
     label: "Generator",
     description: "Generator A (turnir) in B (zgodovina igralca).",
     path: "/dashboard_admin/generator",
   },
-] as const;
+];
 
 export function AdminDashboardPage() {
   return (
@@ -54,6 +76,16 @@ export function AdminDashboardPage() {
             <li key={mod.id}>
               <Link to={mod.path}>{mod.label}</Link>
               <span className="muted"> — {mod.description}</span>
+              {mod.children?.length ? (
+                <ul className="plain-list admin-module-children">
+                  {mod.children.map((child) => (
+                    <li key={child.id}>
+                      <Link to={child.path}>{child.label}</Link>
+                      <span className="muted"> — {child.description}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </li>
           ))}
         </ul>

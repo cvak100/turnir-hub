@@ -10,12 +10,13 @@ from rest_framework_simplejwt.views import (
 )
 
 from apps.core.views.generator import (
+    Breginj2009GeneratorView,
     DemoTournamentGeneratorView,
     GroupKnockoutGeneratorView,
     PlayerHistoryGeneratorView,
 )
 from apps.core.views.health import HealthView
-from apps.users.views.auth import MeView, MyPermissionsView
+from apps.users.views.auth import ChangePasswordView, MeView, MyPermissionsView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -41,6 +42,11 @@ urlpatterns = [
         PlayerHistoryGeneratorView.as_view(),
         name="admin-generator-player-history",
     ),
+    path(
+        "api/v1/admin/generator/breginj-2009/",
+        Breginj2009GeneratorView.as_view(),
+        name="admin-generator-breginj-2009",
+    ),
     path("api/v1/", include("apps.tournaments.urls")),
     path("api/v1/", include("apps.players.urls")),
     path("api/v1/", include("apps.matches.urls")),
@@ -58,6 +64,11 @@ urlpatterns = [
         name="token_verify",
     ),
     path("api/v1/auth/me/", MeView.as_view(), name="auth-me"),
+    path(
+        "api/v1/auth/change-password/",
+        ChangePasswordView.as_view(),
+        name="auth-change-password",
+    ),
     path(
         "api/v1/auth/my-permissions/",
         MyPermissionsView.as_view(),

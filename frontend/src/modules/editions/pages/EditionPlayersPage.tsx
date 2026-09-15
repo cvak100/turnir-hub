@@ -1,4 +1,11 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ErrorBanner,
@@ -6,12 +13,20 @@ import {
   StateMessage,
 } from "@/shared/components";
 import { useAuth } from "@/shared/auth";
+import { EditionManageNav } from "../EditionManageNav";
 import { formatPersonName } from "@/shared/utils/format";
-import { teamParticipationService } from "@/modules/teams/services/teamService";
+import {
+  teamParticipationService,
+  type TeamParticipationListItem,
+} from "@/modules/teams/services/teamService";
 import {
   participationPlayerService,
+  playerService,
+  type PlayerListItem,
   type TeamParticipationPlayerListItem,
 } from "@/modules/players/services/playerService";
+
+type ViewMode = "list" | "register";
 
 type SortKey =
   | "player"
@@ -29,6 +44,22 @@ function captainLabel(row: TeamParticipationPlayerListItem): string {
   if (row.is_captain) return "Kapetan";
   if (row.is_vice_captain) return "Podkapetan";
   return "—";
+}
+
+function playerLabel(p: PlayerListItem): string {
+  return formatPersonName(p.person);
+}
+
+function toggleSet(
+  setter: Dispatch<SetStateAction<Set<number>>>,
+  id: number,
+) {
+  setter((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
 }
 
 export function EditionPlayersPage() {
@@ -49,6 +80,7 @@ export function EditionPlayersPage() {
   const [sortKey, setSortKey] = useState<SortKey>("player");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [mode, setMode] = useState<ViewMode>("list");
 
   const teams = useAsyncTeams(editionId);
 
@@ -179,19 +211,71 @@ export function EditionPlayersPage() {
     <div className="page">
       <PageHeader
         title="Igralci"
-        subtitle={`Edicija #${editionId}`}
+        subtitle={
+          mode === "register"
+            ? "Prijava igralcev na ekipo v tej ediciji."
+            : `Edicija #${editionId}`
+        }
         actions={
-          <Link
-            className="button-link border-frame border-frame--sm"
-            to={`/editions/${editionId}`}
-          >
-            Nazaj na edicijo
-          </Link>
+          mode === "register" ? (
+            <button
+              type="button"
+              className="button-link border-frame border-frame--sm"
+              onClick={() => {
+                setMode("list");
+                void load();
+              }}
+            >
+              ← Nazaj na seznam
+            </button>
+          ) : (
+            <Link
+              className="button-link border-frame border-frame--sm"
+              to={`/editions/${editionId}`}
+            >
+              Nazaj na edicijo
+            </Link>
+          )
         }
       />
 
+      <EditionManageNav editionId={editionId} />
+
       <ErrorBanner error={error} />
 
+      {mode === "list" && canAssign ? (
+        <div className="page-primary-actions">
+          <button
+            type="button"
+            className="border-frame border-frame--sm"
+            onClick={() => setMode("register")}
+          >
+            Prijava igralcev
+          </button>
+          <Link
+            className="button-secondary border-frame border-frame--sm"
+            to="/dashboard_admin/persons/new"
+          >
+            + Nova oseba
+          </Link>
+        </div>
+      ) : null}
+
+      {mode === "register" && canAssign ? (
+        <PlayerRegisterView
+          editionId={editionId}
+          participations={teams.data ?? []}
+          participationsLoading={teams.loading}
+          onDone={() => {
+            setMode("list");
+            void load();
+          }}
+          onError={setError}
+        />
+      ) : null}
+
+      {mode === "list" ? (
+        <>
       <section className="border-frame border-frame--md stack-form">
         <div className="admin-filter-row">
           <label>
@@ -414,7 +498,341 @@ export function EditionPlayersPage() {
           </p>
         </section>
       ) : null}
+        </>
+      ) : null}
     </div>
+  );
+}
+
+function PlayerRegisterView({
+  editionId,
+  participations,
+  participationsLoading,
+  onDone,
+  onError,
+}: {
+  editionId: number;
+  participations: TeamParticipationListItem[];
+  participationsLoading: boolean;
+  onDone: () => void;
+  onError: (err: unknown) => void;
+}) {
+  const [participationId, setParticipationId] = useState("");
+  const [allPlayers, setAllPlayers] = useState<PlayerListItem[]>([]);
+  const [editionRoster, setEditionRoster] = useState<
+    TeamParticipationPlayerListItem[]
+  >([]);
+  const [teamRoster, setTeamRoster] = useState<TeamParticipationPlayerListItem[]>(
+    [],
+  );
+  const [priorPlayerIds, setPriorPlayerIds] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [availSelected, setAvailSelected] = useState<Set<number>>(new Set());
+  const [rosterSelected, setRosterSelected] = useState<Set<number>>(new Set());
+  const [availSearch, setAvailSearch] = useState("");
+  const [rosterSearch, setRosterSearch] = useState("");
+
+  const selectedParticipation = useMemo(
+    () =>
+      participations.find((p) => String(p.id) === participationId) ?? null,
+    [participationId, participations],
+  );
+
+  const loadPlayers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [playersPage, editionPage] = await Promise.all([
+        playerService.list({ page_size: 500, is_active: true }),
+        participationPlayerService.list({
+          tournament_edition: editionId,
+          page_size: 1000,
+        }),
+      ]);
+      setAllPlayers(playersPage.results);
+      setEditionRoster(editionPage.results);
+      setAvailSelected(new Set());
+      setRosterSelected(new Set());
+    } catch (err) {
+      onError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [editionId, onError]);
+
+  const loadTeamRoster = useCallback(async () => {
+    if (!participationId) {
+      setTeamRoster([]);
+      setPriorPlayerIds(new Set());
+      return;
+    }
+    try {
+      const part = participations.find((p) => String(p.id) === participationId);
+      const rosterPage = await participationPlayerService.list({
+        team_participation: Number(participationId),
+        page_size: 500,
+      });
+      setTeamRoster(rosterPage.results);
+      setAvailSelected(new Set());
+      setRosterSelected(new Set());
+
+      if (part) {
+        try {
+          const priorPage = await participationPlayerService.list({
+            team: part.team.id,
+            page_size: 1000,
+          });
+          setPriorPlayerIds(new Set(priorPage.results.map((r) => r.player.id)));
+        } catch {
+          setPriorPlayerIds(new Set());
+        }
+      }
+    } catch (err) {
+      onError(err);
+    }
+  }, [onError, participationId, participations]);
+
+  useEffect(() => {
+    void loadPlayers();
+  }, [loadPlayers]);
+
+  useEffect(() => {
+    void loadTeamRoster();
+  }, [loadTeamRoster]);
+
+  useEffect(() => {
+    if (participationId || participations.length === 0) return;
+    setParticipationId(String(participations[0].id));
+  }, [participationId, participations]);
+
+  const editionPlayerIds = useMemo(
+    () => new Set(editionRoster.map((r) => r.player.id)),
+    [editionRoster],
+  );
+
+  const availablePlayers = useMemo(() => {
+    const q = availSearch.trim().toLowerCase();
+    return allPlayers
+      .filter((p) => !editionPlayerIds.has(p.id))
+      .filter((p) => {
+        if (!q) return true;
+        return playerLabel(p).toLowerCase().includes(q);
+      })
+      .sort((a, b) => {
+        const ap = priorPlayerIds.has(a.id) ? 0 : 1;
+        const bp = priorPlayerIds.has(b.id) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return playerLabel(a).localeCompare(playerLabel(b), "sl");
+      });
+  }, [allPlayers, availSearch, editionPlayerIds, priorPlayerIds]);
+
+  const rosterFiltered = useMemo(() => {
+    const q = rosterSearch.trim().toLowerCase();
+    return teamRoster.filter((r) => {
+      if (!q) return true;
+      return playerLabel(r.player).toLowerCase().includes(q);
+    });
+  }, [rosterSearch, teamRoster]);
+
+  async function assignSelected() {
+    if (!participationId) return;
+    const ids = [...availSelected];
+    if (ids.length === 0) return;
+    setBusy(true);
+    try {
+      for (const playerId of ids) {
+        await participationPlayerService.create({
+          team_participation: Number(participationId),
+          player: playerId,
+        });
+      }
+      await loadPlayers();
+      await loadTeamRoster();
+    } catch (err) {
+      onError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unassignSelected() {
+    const ids = [...rosterSelected];
+    if (ids.length === 0) return;
+    setBusy(true);
+    try {
+      for (const rowId of ids) {
+        await participationPlayerService.delete(rowId);
+      }
+      await loadPlayers();
+      await loadTeamRoster();
+    } catch (err) {
+      onError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (participationsLoading || loading) {
+    return <StateMessage variant="loading" />;
+  }
+
+  if (participations.length === 0) {
+    return (
+      <section className="border-frame border-frame--md">
+        <StateMessage
+          variant="empty"
+          title="Ni prijavljenih ekip"
+          message="Najprej prijavi ekipe na turnir, nato lahko dodaš igralce."
+        />
+        <p style={{ marginTop: "0.75rem" }}>
+          <Link
+            className="border-frame border-frame--sm"
+            to={`/editions/${editionId}/teams`}
+          >
+            Prijava ekip
+          </Link>
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="border-frame border-frame--md stack-form">
+      <div className="row-actions" style={{ justifyContent: "space-between" }}>
+        <label style={{ flex: "1 1 16rem", maxWidth: "28rem" }}>
+          Ekipa *
+          <select
+            value={participationId}
+            onChange={(e) => setParticipationId(e.target.value)}
+          >
+            {participations.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.participation_name || p.team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="button-secondary border-frame border-frame--sm"
+          onClick={onDone}
+        >
+          Zapri prijavo
+        </button>
+      </div>
+
+      {selectedParticipation ? (
+        <p className="muted" style={{ margin: 0 }}>
+          Igralce dodeljuješ ekipi{" "}
+          <strong>{selectedParticipation.participation_name}</strong>. Vsak
+          igralec sme biti na tej ediciji samo v eni ekipi.
+        </p>
+      ) : null}
+
+      <div className="team-transfer">
+        <section className="team-transfer__box border-frame border-frame--sm">
+          <div className="team-transfer__head">
+            <h3 style={{ margin: 0 }}>Razpoložljivi igralci</h3>
+            <span className="muted">{availablePlayers.length}</span>
+          </div>
+          <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
+            Najprej bivši igralci te ekipe, nato abeceda. Že prijavljeni na
+            turnir so skriti.
+          </p>
+          <input
+            className="team-transfer__search"
+            value={availSearch}
+            onChange={(e) => setAvailSearch(e.target.value)}
+            placeholder="Išči igralce…"
+          />
+          <ul className="team-transfer__list plain-list">
+            {availablePlayers.length === 0 ? (
+              <li className="muted">Ni razpoložljivih igralcev.</li>
+            ) : (
+              availablePlayers.map((p) => (
+                <li key={p.id} className="team-transfer__item">
+                  <label className="checkbox-row">
+                    <input
+                      className="sketch-check border-frame border-frame--sm"
+                      type="checkbox"
+                      checked={availSelected.has(p.id)}
+                      disabled={!participationId}
+                      onChange={() => toggleSet(setAvailSelected, p.id)}
+                    />
+                    <span>
+                      {playerLabel(p)}
+                      {priorPlayerIds.has(p.id) ? (
+                        <span className="muted"> · prej v ekipi</span>
+                      ) : null}
+                    </span>
+                  </label>
+                </li>
+              ))
+            )}
+          </ul>
+        </section>
+
+        <div className="team-transfer__actions">
+          <button
+            type="button"
+            className="border-frame border-frame--sm"
+            disabled={busy || !participationId || availSelected.size === 0}
+            onClick={() => void assignSelected()}
+          >
+            Prijavi →
+          </button>
+          <button
+            type="button"
+            className="button-secondary border-frame border-frame--sm"
+            disabled={busy || rosterSelected.size === 0}
+            onClick={() => void unassignSelected()}
+          >
+            ← Odstrani
+          </button>
+        </div>
+
+        <section className="team-transfer__box border-frame border-frame--sm">
+          <div className="team-transfer__head">
+            <h3 style={{ margin: 0 }}>Na ekipi</h3>
+            <span className="muted">{teamRoster.length}</span>
+          </div>
+          <input
+            className="team-transfer__search"
+            value={rosterSearch}
+            onChange={(e) => setRosterSearch(e.target.value)}
+            placeholder="Išči na ekipi…"
+          />
+          <ul className="team-transfer__list plain-list">
+            {rosterFiltered.length === 0 ? (
+              <li className="muted">Še ni igralcev na tej ekipi.</li>
+            ) : (
+              rosterFiltered.map((r) => (
+                <li key={r.id} className="team-transfer__item">
+                  <label className="checkbox-row">
+                    <input
+                      className="sketch-check border-frame border-frame--sm"
+                      type="checkbox"
+                      checked={rosterSelected.has(r.id)}
+                      onChange={() => toggleSet(setRosterSelected, r.id)}
+                    />
+                    <span>
+                      {r.jersey_number != null ? `#${r.jersey_number} ` : ""}
+                      {playerLabel(r.player)}
+                    </span>
+                  </label>
+                </li>
+              ))
+            )}
+          </ul>
+        </section>
+      </div>
+
+      <p className="muted">
+        Igralec še ne obstaja v sistemu?{" "}
+        <Link to="/dashboard_admin/persons/new">Dodaj novo osebo</Link>, nato
+        jo prijavi tukaj.
+      </p>
+    </section>
   );
 }
 

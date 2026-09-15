@@ -92,6 +92,27 @@ type GeneratorBResult = {
   };
 };
 
+type GeneratorCResult = {
+  tournament_id: number;
+  edition_id: number;
+  tournament_name: string;
+  edition_name: string;
+  champion: string | null;
+  final_score: string;
+  location: string;
+  date: string;
+  system: string;
+  steps: GeneratorStep[];
+  links: {
+    tournament: string;
+    edition: string;
+    matches: string;
+    standings: string;
+    stats: string;
+    players: string;
+  };
+};
+
 const FLOW_A = [
   "Turnir (Trojke / knockout)",
   "4 ekipe + 5 igralcev na ekipo",
@@ -117,10 +138,19 @@ const FLOW_B = [
   "Profil z zgodovino in grafom",
 ] as const;
 
+const FLOW_C = [
+  "Demo: lokalni turnir 2009-style (4+1)",
+  "12 ekip, 4 skupine po 3 · napredujeta 2",
+  "Skupinski del z demo rezultati + strelci (anonimizirano)",
+  "ČF → PF → 3. mesto → finale (tudi penali)",
+  "Zaključek: vrstni red, nagrade, strelci",
+] as const;
+
 export function GeneratorAdminPage() {
   const [showA, setShowA] = useState(false);
-  const [showAA, setShowAA] = useState(true);
+  const [showAA, setShowAA] = useState(false);
   const [showB, setShowB] = useState(false);
+  const [showC, setShowC] = useState(false);
 
   const [busyA, setBusyA] = useState(false);
   const [errorA, setErrorA] = useState<unknown>(null);
@@ -143,6 +173,10 @@ export function GeneratorAdminPage() {
   const [allPlayers, setAllPlayers] = useState<PlayerListItem[]>([]);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersError, setPlayersError] = useState<unknown>(null);
+
+  const [busyC, setBusyC] = useState(false);
+  const [errorC, setErrorC] = useState<unknown>(null);
+  const [resultC, setResultC] = useState<GeneratorCResult | null>(null);
 
   useEffect(() => {
     if (modeB !== "existing") return;
@@ -251,6 +285,23 @@ export function GeneratorAdminPage() {
       setErrorB(err);
     } finally {
       setBusyB(false);
+    }
+  }
+
+  async function runC() {
+    setBusyC(true);
+    setErrorC(null);
+    setResultC(null);
+    try {
+      const data = await api.post<GeneratorCResult>(
+        "/admin/generator/breginj-2009/",
+        {},
+      );
+      setResultC(data);
+    } catch (err) {
+      setErrorC(err);
+    } finally {
+      setBusyC(false);
     }
   }
 
@@ -711,6 +762,125 @@ export function GeneratorAdminPage() {
                 </div>
                 <ol className="generator-steps">
                   {resultB.steps.map((s, i) => (
+                    <li key={`${s.step}-${i}`}>
+                      <strong>{s.message}</strong>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </section>
+
+      {/* Generator C */}
+      <section className="border-frame border-frame--md">
+        <div
+          className="row-actions"
+          style={{
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: showC ? "0.75rem" : 0,
+          }}
+        >
+          <div>
+            <h2 style={{ margin: 0 }}>Generator C</h2>
+            <p className="muted" style={{ margin: "0.25rem 0 0" }}>
+              Anonimiziran demo: lokalni 4+1 turnir (format 2009).
+            </p>
+          </div>
+          <button
+            type="button"
+            className="border-frame border-frame--sm"
+            aria-expanded={showC}
+            onClick={() => setShowC((v) => !v)}
+          >
+            {showC ? "−" : "+"}
+          </button>
+        </div>
+
+        {showC ? (
+          <>
+            <ErrorBanner error={errorC} />
+            <ol className="generator-flow">
+              {FLOW_C.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
+            <p className="muted">
+              Rekonstrukcija z zgodovinskimi rezultati, strelci, penali in
+              končnim vrstnim redom (1. Kotarji, 2. Medigo, 3. Žaga).
+            </p>
+            <div className="row-actions">
+              <button
+                type="button"
+                className="border-frame border-frame--sm"
+                disabled={busyC}
+                onClick={() => void runC()}
+              >
+                {busyC ? "Generiram…" : "Generiraj demo C (2009-style)"}
+              </button>
+            </div>
+            {busyC ? (
+              <StateMessage
+                variant="loading"
+                message="Ustvarjam demo C…"
+              />
+            ) : null}
+            {resultC ? (
+              <div className="generator-result" style={{ marginTop: "1rem" }}>
+                <p className="generator-result__champ">
+                  Zmagovalec: <strong>{resultC.champion ?? "—"}</strong>
+                  {resultC.final_score ? (
+                    <span className="muted">
+                      {" "}
+                      · finale {resultC.final_score}
+                    </span>
+                  ) : null}
+                </p>
+                <p>
+                  <strong>{resultC.tournament_name}</strong>
+                  <span className="muted">
+                    {" "}
+                    · {resultC.location} · {resultC.date} · {resultC.system}
+                    {" · "}#{resultC.tournament_id} / edicija #
+                    {resultC.edition_id}
+                  </span>
+                </p>
+                <div className="row-actions" style={{ marginBottom: "0.75rem" }}>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultC.links.edition}
+                  >
+                    Edicija
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultC.links.matches}
+                  >
+                    Tekme
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultC.links.standings}
+                  >
+                    Vrstni red
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultC.links.stats}
+                  >
+                    Statistika
+                  </Link>
+                  <Link
+                    className="button-link border-frame border-frame--sm"
+                    to={resultC.links.players}
+                  >
+                    Igralci
+                  </Link>
+                </div>
+                <ol className="generator-steps">
+                  {resultC.steps.map((s, i) => (
                     <li key={`${s.step}-${i}`}>
                       <strong>{s.message}</strong>
                     </li>

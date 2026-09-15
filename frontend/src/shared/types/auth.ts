@@ -2,6 +2,7 @@ import type { PermissionCode } from "@/shared/constants/permissions";
 
 export interface UserRole {
   role: string;
+  role_name?: string;
   tournament_edition_id: number | null;
   permissions: PermissionCode[];
 }
@@ -17,7 +18,10 @@ export interface AuthPerson {
 export interface AuthUser {
   id: number;
   username: string;
+  email?: string;
+  date_joined?: string | null;
   is_superuser: boolean;
+  is_staff?: boolean;
   roles: UserRole[];
   person: AuthPerson | null;
 }

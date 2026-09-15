@@ -1,6 +1,8 @@
 # turnir-hub frontend
 
-Vite + React + TypeScript client for the turnir-hub API (Phase 7).
+Vite + React + TypeScript client for the turnir-hub API.
+
+**Status:** work in progress.
 
 ## Prerequisites
 
@@ -12,7 +14,7 @@ Vite + React + TypeScript client for the turnir-hub API (Phase 7).
 ```bash
 cd frontend
 npm install
-copy .env.example .env   # Windows
+copy .env.example .env   # Windows (optional)
 # cp .env.example .env   # macOS / Linux
 ```
 
@@ -23,6 +25,8 @@ npm run dev
 ```
 
 App: [http://localhost:3000](http://localhost:3000)
+
+Vite proxies `/api` and `/ws` to the backend (see `vite.config.ts`).
 
 ## Build
 

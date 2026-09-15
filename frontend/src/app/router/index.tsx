@@ -7,6 +7,8 @@ import { RequirePermission } from "@/app/router/RequirePermission";
 import { AdminDashboardPage } from "@/modules/admin/pages/AdminDashboardPage";
 import { CatalogAdminPage } from "@/modules/admin/pages/CatalogAdminPage";
 import { GeneratorAdminPage } from "@/modules/admin/pages/GeneratorAdminPage";
+import { LiveEditAdminPage } from "@/modules/admin/pages/LiveEditAdminPage";
+import { RolesAdminPage } from "@/modules/admin/pages/RolesAdminPage";
 import { MatchesAdminPage } from "@/modules/admin/pages/MatchesAdminPage";
 import { PersonDetailPage } from "@/modules/admin/pages/PersonDetailPage";
 import { PersonFormPage } from "@/modules/admin/pages/PersonFormPage";
@@ -86,12 +88,20 @@ export function AppRouter() {
                   element={<GeneratorAdminPage />}
                 />
                 <Route
+                  path="/dashboard_admin/roles"
+                  element={<RolesAdminPage />}
+                />
+                <Route
                   path="/dashboard_admin/catalog"
                   element={<CatalogAdminPage />}
                 />
                 <Route
                   path="/dashboard_admin/matches"
                   element={<MatchesAdminPage />}
+                />
+                <Route
+                  path="/dashboard_admin/live"
+                  element={<LiveEditAdminPage />}
                 />
                 <Route
                   path="/dashboard_admin/live/matches/:id"

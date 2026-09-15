@@ -7,6 +7,7 @@ import {
   StateMessage,
 } from "@/shared/components";
 import { useAuth } from "@/shared/auth";
+import { EditionManageNav } from "../EditionManageNav";
 import { editionService } from "@/modules/editions/services/editionService";
 import {
   matchService,
@@ -381,6 +382,8 @@ export function EditionMatchesPage() {
           </Link>
         }
       />
+
+      <EditionManageNav editionId={editionId} />
 
       <ErrorBanner error={error} />
 

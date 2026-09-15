@@ -41,6 +41,13 @@ htmlcov/
 # Docker
 postgres_data/
 
-# Local portable Node (start-dev.bat fallback)
+# Local portable Node / Postgres (start-dev.bat fallback)
 tools/node/
 tools/node-*.zip
+tools/pgsql/
+tools/pgsql-extract/
+tools/_*.py
+
+# Local scratch / duplicates
+READMEMAIN copy.md
+*.asar

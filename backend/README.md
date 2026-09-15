@@ -2,6 +2,8 @@
 
 Django REST API for the turnir-hub platform.
 
+**Status:** work in progress.
+
 ## Setup
 
 ```bash
@@ -17,6 +19,9 @@ copy .env.example .env         # Windows
 ## Run
 
 ```bash
+python manage.py migrate
+python manage.py seed_all
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
@@ -32,8 +37,8 @@ Set `DJANGO_ENV` to `development` (default) or `production`.
 
 ## Apps
 
-- `apps.users`
-- `apps.tournaments`
-- `apps.matches`
-- `apps.players`
-- `apps.core`
+- `apps.users` — auth, persons, roles/permissions
+- `apps.tournaments` — tournaments, editions, phases, standings, finish
+- `apps.matches` — matches, events, live WebSocket
+- `apps.players` — teams, participations, players, awards
+- `apps.core` — catalog, seeds, demo generators

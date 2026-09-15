@@ -475,6 +475,12 @@ export function TournamentAdminDetailPage() {
                     {isAdmin ? (
                       <td>
                         <div className="row-actions">
+                          <Link className="linkish" to={`/editions/${ed.id}/teams`}>
+                            Ekipe
+                          </Link>
+                          <Link className="linkish" to={`/editions/${ed.id}/players`}>
+                            Prijava igralcev
+                          </Link>
                           <Link className="linkish" to={`/editions/${ed.id}/phases`}>
                             Faze
                           </Link>

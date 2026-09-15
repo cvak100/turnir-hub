@@ -28,18 +28,41 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): voi
 }
 
 function buildUrl(path: string, params?: QueryParams): string {
-  const normalized = path.startsWith("http")
-    ? path
-    : `${env.apiUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
-  const url = new URL(normalized);
+  if (path.startsWith("http")) {
+    const url = new URL(path);
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value === undefined || value === null || value === "") continue;
+        url.searchParams.set(key, String(value));
+      }
+    }
+    return url.toString();
+  }
 
+  const joined = `${env.apiUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+
+  // Relative /api/v1/... — fetch() accepts this; Vite proxies to Django
+  if (joined.startsWith("/")) {
+    if (!params) return joined;
+    const origin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:3000";
+    const url = new URL(joined, origin);
+    for (const [key, value] of Object.entries(params)) {
+      if (value === undefined || value === null || value === "") continue;
+      url.searchParams.set(key, String(value));
+    }
+    return `${url.pathname}${url.search}`;
+  }
+
+  const url = new URL(joined);
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       if (value === undefined || value === null || value === "") continue;
       url.searchParams.set(key, String(value));
     }
   }
-
   return url.toString();
 }
 
@@ -110,12 +133,24 @@ async function request<T>(
     }
   }
 
-  const response = await fetch(buildUrl(path, params), {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal,
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path, params), {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    throw new ApiError({
+      status: 0,
+      code: "network_error",
+      message:
+        err instanceof Error
+          ? err.message
+          : "Network error while calling API.",
+    });
+  }
 
   if (response.status === 401 && auth && retry) {
     if (!refreshPromise) {

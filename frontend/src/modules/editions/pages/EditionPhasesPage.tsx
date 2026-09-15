@@ -8,6 +8,7 @@ import {
 } from "@/shared/components";
 import { useAsyncData } from "@/shared/hooks/useAsyncData";
 import { useAuth } from "@/shared/auth";
+import { EditionManageNav } from "../EditionManageNav";
 import {
   adminTournamentService,
   sortRuleTemplates,
@@ -442,6 +443,8 @@ export function EditionPhasesPage() {
           </Link>
         }
       />
+
+      <EditionManageNav editionId={editionId} />
 
       <ErrorBanner error={error ?? edition.error ?? formats.error} />
 

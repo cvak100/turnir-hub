@@ -1,6 +1,12 @@
 import { api } from "@/shared/api";
 import type { AuthMeResponse, TokenResponse } from "@/shared/types";
 
+export type ChangePasswordInput = {
+  current_password: string;
+  new_password: string;
+  new_password_confirm: string;
+};
+
 export const authService = {
   login(username: string, password: string) {
     return api.post<TokenResponse>(
@@ -12,5 +18,9 @@ export const authService = {
 
   me() {
     return api.get<AuthMeResponse>("/auth/me/");
+  },
+
+  changePassword(data: ChangePasswordInput) {
+    return api.post<{ detail: string }>("/auth/change-password/", data);
   },
 };

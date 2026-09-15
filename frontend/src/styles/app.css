@@ -2926,6 +2926,32 @@ input.sketch-check:focus-visible {
   margin: 0 0 1rem;
 }
 
+.edition-manage-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-muted, #cbd5e1);
+  border-radius: 0.35rem;
+  background: var(--surface-muted, #f8fafc);
+}
+
+.edition-manage-nav__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted, #64748b);
+  margin-right: 0.25rem;
+}
+
+.edition-manage-nav a.is-active {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 .edition-section-title {
   margin: 0 0 0.75rem;
   font-size: 1.2rem;
@@ -3494,4 +3520,53 @@ input.sketch-check:focus-visible {
   .stats-section__body {
     grid-template-columns: 1fr;
   }
+}
+
+.account-dl {
+  display: grid;
+  gap: 0.55rem 1.25rem;
+  margin: 0;
+}
+
+.account-dl > div {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 0.35rem 0.85rem;
+  align-items: baseline;
+}
+
+.account-dl dt {
+  margin: 0;
+  color: var(--muted, #666);
+  font-size: 0.92rem;
+}
+
+.account-dl dd {
+  margin: 0;
+}
+
+.account-success {
+  margin: 0 0 0.75rem;
+  color: #2a6f4e;
+}
+
+@media (max-width: 560px) {
+  .account-dl > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-module-children {
+  margin: 0.35rem 0 0.55rem 1.1rem;
+}
+
+.roles-perm-list {
+  margin-top: 0.75rem;
+}
+
+.roles-perm-item {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  cursor: pointer;
 }
